@@ -1,6 +1,6 @@
 # Need to point to the correct paths
-train_path: ???
-benchmark_path: data/benchmark
+train_path: training_dataset/raw_datasets/200000
+benchmark_path: test_set
 
 
 
@@ -21,7 +21,7 @@ model_path: run/False/2022-11-07/13-46-03/Exp_weights/1000000_log_-epoch=104-val
 # Training parameters
 num_of_workers: 0
 check_val_every_n_epoch: 5 # Number of epochs between each benchmarking
-batch_size: 400
+batch_size: 50
 num_sanity_val_steps: 0 # Number of sanity validation steps
 epochs: 10000
 precision: 16
@@ -54,7 +54,7 @@ dataset:
       min: 0.05
   number_of_complexity_classes: 30 # Hard coded in the code at the moment 1405:config.py
   conditioning: 
-    mode: True # True -> Conditionings will be generated in the __getitem__ method and passed to the model
+    mode: False # True -> Conditionings will be generated in the __getitem__ method and passed to the model
                 # False -> Conditionings will not generated neither passed to the model. 
                 # Note that this option has to be consistent with the architecture.conditioning option
     name: "train" # Or it is filled from the validation
@@ -102,7 +102,7 @@ architecture:
   number_possible_tokens: 90
   num_tokens_condition: 150 # Conditional encoder
   embedding_dim_condition: 512
-  conditioning: True
+  conditioning: False
   concat: True
   predict_constants: c # Can be False or "c"
   wupsteps: 4000
@@ -123,6 +123,11 @@ inference:
     normalization_type: MSE
     stop_time: 1e9
   
+# Contrastive learning arguments
+contrastive_learning:
+  enabled: True
+  temperature: 0.1 
+
 
 # @package _group_
 hydra:
