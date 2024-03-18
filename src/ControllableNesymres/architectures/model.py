@@ -3,6 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from .set_encoder import SetEncoder #, SymEncoder
+from .set_skeleton_encoder import SetSkeletonEncoder
 from .beam_hypothesis import BeamHypotheses
 import numpy as np
 from ..dataset.generator import Generator, InvalidPrefixExpression
@@ -58,6 +59,11 @@ class Model(pl.LightningModule):
             self.create_sinusoidal_embeddings(
                 cfg.architecture.length_eq, cfg.architecture.dim_hidden, out=self.pos_embedding.weight
             )
+        
+        if cfg.contrastive_learning.enabled:
+            self.skeleton_enc = SetSkeletonEncoder(cfg.architecture)
+            self.skeleton_linear_layer = nn.Linear(cfg.architecture.dim_hidden, cfg.architecture.num_features)
+
         decoder_layer = nn.TransformerDecoderLayer(
             d_model=cfg.architecture.dim_hidden,
             nhead=cfg.architecture.num_heads,
@@ -161,16 +167,40 @@ class Model(pl.LightningModule):
         )
         te = self.tok_embedding(trg[:, :-1])
         trg_ = self.dropout(te + pos)
-        output = self.decoder_transfomer(trg_.permute(1, 0, 2),enc_src.permute(1, 0, 2),trg_mask2.bool(),tgt_key_padding_mask=trg_mask1.bool())#,memory_key_padding_mask=mask_dec.bool()) 
+
+        if self.cfg.contrastive_learning.enabled:
+            skeleton_output = self.skeleton_enc(trg_.permute(1, 0, 2))
+            output = self.decoder_transfomer(skeleton_output, enc_src.permute(1, 0, 2), trg_mask2.bool(), tgt_key_padding_mask=trg_mask1.bool())
+            skeleton_output = self.skeleton_linear_layer(skeleton_output)
+        else:
+            output = self.decoder_transfomer(trg_.permute(1, 0, 2),enc_src.permute(1, 0, 2),trg_mask2.bool(),tgt_key_padding_mask=trg_mask1.bool())#,memory_key_padding_mask=mask_dec.bool())
+            skeleton_output = None
+
         output = self.fc_out(output)
 
-        return output, trg
+        return output, trg, skeleton_output, enc_src
 
-    def compute_loss(self,output, trg):
+    def compute_contrastive_loss(self, set_trf_output, skeleton_enc_output):
+        summed_xy_loss = torch.sum(torch.log(((set_trf_output.T @ skeleton_enc_output) ** self.cfg.contrastive_learning.temperature) / 
+                                             (torch.sum((set_trf_output.T @ skeleton_enc_output) ** self.cfg.contrastive_learning.temperature))))
+        summed_yx_loss = torch.sum(torch.log(((skeleton_enc_output.T @ set_trf_output) ** self.cfg.contrastive_learning.temperature) / 
+                                             (torch.sum((skeleton_enc_output.T @ set_trf_output) ** self.cfg.contrastive_learning.temperature))))
+        total_loss = summed_xy_loss + summed_yx_loss
+        contrastive_loss = total_loss / set_trf_output.shape[0]
+
+        return contrastive_loss
+
+    def compute_loss(self,output, trg, set_trf_output, skeleton_enc_output=None):
         output = output.permute(1, 0, 2).contiguous().view(-1, output.shape[-1])
         trg = trg[:, 1:].contiguous().view(-1)
         loss = self.criterion(output, trg)
-        return loss
+        if skeleton_enc_output is None:
+            return loss
+        else:
+            contrastive_loss = self.compute_contrastive_loss(set_trf_output, skeleton_enc_output)
+            return {loss * self.cfg.contrastive_learning.lambda_cross_entropy + 
+                    contrastive_loss * self.cfg.contrastive_learning.lambda_contrastive}
+
 
     def compute_loss_per_sample(self, output, trg):
         output = output.permute(1, 0, 2)
@@ -191,7 +221,7 @@ class Model(pl.LightningModule):
             raise MemoryError("Memory error")
         if batch[0].shape[0] == None:
             return None
-        output, trg = self.forward(batch)
+        output, trg, skeleton_output, set_trf_output = self.forward(batch)
 
         # Save equation randomly
         if random.randint(0,10000) > 9999:
@@ -215,12 +245,10 @@ class Model(pl.LightningModule):
         target_expr = set([tuple(x[1]["target_expr"]) for x in batch[2]])
         self.target_expr.update(target_expr)
         self.cnt = self.cnt + 1
-        loss = self.compute_loss(output,trg)
-        self.log("train_loss", loss, on_epoch=True, batch_size=batch[0].shape[0])
-        return loss
-    
-    
 
+        loss = self.compute_loss(output,trg,set_trf_output,skeleton_output)
+        self.log("train_loss", loss, on_epoch=True, batch_size=batch[0].shape[0])
+        return loss   
 
 
     def validation_step(self,batch, batch_idx, dataloader_idx):

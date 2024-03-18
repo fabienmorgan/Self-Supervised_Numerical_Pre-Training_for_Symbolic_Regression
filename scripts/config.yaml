@@ -21,7 +21,7 @@ model_path: run/False/2022-11-07/13-46-03/Exp_weights/1000000_log_-epoch=104-val
 # Training parameters
 num_of_workers: 0
 check_val_every_n_epoch: 5 # Number of epochs between each benchmarking
-batch_size: 50
+batch_size: 10 #50 ideal if gpu is empty 
 num_sanity_val_steps: 0 # Number of sanity validation steps
 epochs: 10000
 precision: 16
@@ -86,7 +86,7 @@ architecture:
   ln: True
   N_p: 0
   num_inds: 100
-  activation: "relu"
+  activation: "ReLU"
   bit16: True
   norm: True
   linear: False
@@ -127,7 +127,9 @@ inference:
 contrastive_learning:
   enabled: True
   temperature: 0.1 
-
+  lambda_contrastive: 0.1
+  lambda_mse: 1
+  lambda_cross_entropy: 1
 
 # @package _group_
 hydra:

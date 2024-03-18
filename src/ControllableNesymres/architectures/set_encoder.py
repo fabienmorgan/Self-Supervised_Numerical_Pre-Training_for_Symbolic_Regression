@@ -43,7 +43,7 @@ class SetEncoder(pl.LightningModule):
             x[:,:,-1] = (x[:,:,-1] - means)/std
             
         if self.linear:
-            if self.activation == 'relu':
+            if self.activation.lower() == 'relu':
                 x = torch.relu(self.linearl(x))
             elif self.activation == 'sine':
                 x = torch.sin(self.linearl(x))

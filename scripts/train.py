@@ -24,8 +24,6 @@ def main(cfg):
         cfg
     )
 
-    
-
     cfg.inference.word2id = data.training_dataset.word2id
     cfg.inference.id2word = data.training_dataset.id2word
     cfg.inference.total_variables = data.training_dataset.total_variables
