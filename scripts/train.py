@@ -8,6 +8,7 @@ from ControllableNesymres.architectures.data import DataModule
 import hydra
 from pathlib import Path
 from pytorch_lightning import loggers as pl_loggers
+from lightning.pytorch.loggers import WandbLogger
 
 
 
@@ -23,6 +24,7 @@ def main(cfg):
         benchmark_path,
         cfg
     )
+    wandb_logger = WandbLogger(project="MMSR")
 
     cfg.inference.word2id = data.training_dataset.word2id
     cfg.inference.id2word = data.training_dataset.id2word
@@ -85,7 +87,7 @@ def main(cfg):
         precision=cfg.precision,
         callbacks=[checkpoint_callback, lr_monitor],
         resume_from_checkpoint=path_to_restart,
-        logger=logger,
+        logger=wandb_logger,
     )
     trainer.fit(model, data)
 
