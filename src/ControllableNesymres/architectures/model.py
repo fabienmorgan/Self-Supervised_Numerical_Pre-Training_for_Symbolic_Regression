@@ -62,7 +62,10 @@ class Model(pl.LightningModule):
         
         if cfg.contrastive_learning.enabled:
             self.skeleton_enc = SetSkeletonEncoder(cfg.architecture)
-            self.skeleton_linear_layer = nn.Linear(cfg.architecture.dim_hidden, cfg.architecture.num_features)
+            #self.skeleton_linear_layer = nn.Linear(cfg.architecture.dim_hidden, cfg.architecture.num_features)
+            self.glob_attn_module = nn.Sequential(nn.Linear(cfg.architecture.dim_hidden, 1), nn.Softmax(dim=1))
+            self.bottleneck_module = nn.Sequential(nn.Linear(cfg.architecture.dim_hidden, cfg.contrastive_learning.contrastive_dim))
+
 
         decoder_layer = nn.TransformerDecoderLayer(
             d_model=cfg.architecture.dim_hidden,
@@ -171,35 +174,60 @@ class Model(pl.LightningModule):
         if self.cfg.contrastive_learning.enabled:
             skeleton_output = self.skeleton_enc(trg_.permute(1, 0, 2))
             output = self.decoder_transfomer(skeleton_output, enc_src.permute(1, 0, 2), trg_mask2.bool(), tgt_key_padding_mask=trg_mask1.bool())
-            skeleton_output = self.skeleton_linear_layer(skeleton_output)
-        else:
+            contrastive_skeleton = self.compute_contrastive_tensor(skeleton_output.permute(1, 0, 2))
+            contrastive_encoder = self.compute_contrastive_tensor(enc_src)
+        else: 
             output = self.decoder_transfomer(trg_.permute(1, 0, 2),enc_src.permute(1, 0, 2),trg_mask2.bool(),tgt_key_padding_mask=trg_mask1.bool())#,memory_key_padding_mask=mask_dec.bool())
-            skeleton_output = None
+            contrastive_skeleton, contrastive_encoder = None, None
 
         output = self.fc_out(output)
 
-        return output, trg, skeleton_output, enc_src
+        return output, trg, contrastive_skeleton, contrastive_encoder
+    
+    def compute_contrastive_tensor(self, tensor):
+        glob_attn = self.glob_attn_module(tensor) 
+        z_rep = torch.bmm(glob_attn.transpose(-1, 1), tensor).squeeze()
+
+        if len(tensor) == 1:
+            z_rep = z_rep.unsqueeze(0)
+
+        z_rep = self.bottleneck_module(z_rep)
+        return z_rep
+
 
     def compute_contrastive_loss(self, set_trf_output, skeleton_enc_output):
-        summed_xy_loss = torch.sum(torch.log(((set_trf_output.T @ skeleton_enc_output) ** self.cfg.contrastive_learning.temperature) / 
-                                             (torch.sum((set_trf_output.T @ skeleton_enc_output) ** self.cfg.contrastive_learning.temperature))))
-        summed_yx_loss = torch.sum(torch.log(((skeleton_enc_output.T @ set_trf_output) ** self.cfg.contrastive_learning.temperature) / 
-                                             (torch.sum((skeleton_enc_output.T @ set_trf_output) ** self.cfg.contrastive_learning.temperature))))
+        xy_dot = torch.sum(set_trf_output * skeleton_enc_output,axis=1)
+
+        
+        xy = set_trf_output @ skeleton_enc_output.T
+        yx = skeleton_enc_output @ set_trf_output.T
+
+        # yx = skeleton_enc_output.T @ set_trf_output
+        temp_xy_dot = xy_dot / self.cfg.contrastive_learning.temperature
+        temp_xy = xy / self.cfg.contrastive_learning.temperature
+        temp_yx = yx / self.cfg.contrastive_learning.temperature
+        
+        temp_xy_dot =  torch.exp(temp_xy_dot)
+        exp_xy = torch.exp(temp_xy)
+        exp_yx = torch.exp(temp_yx)          
+
+        summed_xy_loss = torch.sum(torch.log(temp_xy_dot / torch.sum(exp_xy, axis=1)), axis=0)
+        summed_yx_loss = torch.sum(torch.log(temp_xy_dot / torch.sum(exp_yx, axis=1)), axis=0)
         total_loss = summed_xy_loss + summed_yx_loss
-        contrastive_loss = total_loss / set_trf_output.shape[0]
+        contrastive_loss = - (total_loss / set_trf_output.shape[0])
 
         return contrastive_loss
 
-    def compute_loss(self,output, trg, set_trf_output, skeleton_enc_output=None):
+    def compute_loss(self,output, trg, set_trf_contrastive=None, skeleton_enc_contrastive=None):
         output = output.permute(1, 0, 2).contiguous().view(-1, output.shape[-1])
         trg = trg[:, 1:].contiguous().view(-1)
         loss = self.criterion(output, trg)
-        if skeleton_enc_output is None:
+        if skeleton_enc_contrastive is None and set_trf_contrastive is None:
             return loss
         else:
-            contrastive_loss = self.compute_contrastive_loss(set_trf_output, skeleton_enc_output)
-            return {loss * self.cfg.contrastive_learning.lambda_cross_entropy + 
-                    contrastive_loss * self.cfg.contrastive_learning.lambda_contrastive}
+            contrastive_loss = self.compute_contrastive_loss(set_trf_contrastive, skeleton_enc_contrastive)
+            return (loss * self.cfg.contrastive_learning.lambda_cross_entropy + 
+                    contrastive_loss * self.cfg.contrastive_learning.lambda_contrastive)
 
 
     def compute_loss_per_sample(self, output, trg):
