@@ -1469,10 +1469,9 @@ class DataModule(pl.LightningDataModule):
                             self.validation_datasets.append([self.validation_dataset, curr_cfg, [path.name, name ]])
     def train_dataloader(self):
         """returns training dataloader"""
-        print("Test")
         trainloader = torch.utils.data.DataLoader(
             self.training_dataset,
-            batch_size=self.cfg.batch_size//self.cfg.gpu,
+            batch_size=self.cfg.batch_size//self.cfg.accelerator_devices,
             shuffle=True,
             drop_last=True,
             collate_fn=partial(custom_collate_fn, total_variables=self.training_dataset.total_variables, total_coefficients=self.training_dataset.total_coefficients, cfg= self.cfg),

@@ -19,13 +19,14 @@ model_path: run/False/2022-11-07/13-46-03/Exp_weights/1000000_log_-epoch=104-val
 
 
 # Training parameters
-num_of_workers: 0
+num_of_workers: 6
 check_val_every_n_epoch: 5 # Number of epochs between each benchmarking
 batch_size: 50 # 50 ideal if gpu(rtx 3080) is empty 
 num_sanity_val_steps: 0 # Number of sanity validation steps
 epochs: 10000
 precision: 16
-gpu: 1 # Number of the gpu to use 
+accelerator: "gpu" # Use gpu 
+accelerator_devices: 1 # Number of the gpu to use
 resume_from_checkpoint: ""
 is_debug: False # Should be always False, used for checking the code.
 
@@ -138,3 +139,5 @@ hydra:
     dir: run/${architecture.predict_constants}/${now:%Y-%m-%d}/${now:%H-%M-%S}
   sweep:
       dir: runs/${architecture.predict_constants}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job:
+    chdir: True

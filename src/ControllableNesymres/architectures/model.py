@@ -202,7 +202,6 @@ class Model(pl.LightningModule):
         xy = set_trf_output @ skeleton_enc_output.T
         yx = skeleton_enc_output @ set_trf_output.T
 
-        # yx = skeleton_enc_output.T @ set_trf_output
         temp_xy_dot = xy_dot / self.cfg.contrastive_learning.temperature
         temp_xy = xy / self.cfg.contrastive_learning.temperature
         temp_yx = yx / self.cfg.contrastive_learning.temperature

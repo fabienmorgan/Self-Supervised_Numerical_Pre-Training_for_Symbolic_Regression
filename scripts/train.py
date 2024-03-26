@@ -1,6 +1,7 @@
 import os
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+from pytorch_lightning.strategies import DDPStrategy
 from dataclasses import dataclass
 from typing import Tuple
 from ControllableNesymres.architectures.model import Model
@@ -14,7 +15,7 @@ from lightning.pytorch.loggers import WandbLogger
 
 lr_monitor = LearningRateMonitor(logging_interval='step')
 
-@hydra.main(config_name="config")
+@hydra.main(config_name="config", version_base="1.2", config_path="")
 def main(cfg):
     #seed_everything(9)
     train_path = Path(hydra.utils.to_absolute_path(cfg.train_path))
@@ -24,7 +25,8 @@ def main(cfg):
         benchmark_path,
         cfg
     )
-    wandb_logger = WandbLogger(project="MMSR")
+
+    wandb_logger = WandbLogger(project="MMSR", entity="fabien-morgan")
 
     cfg.inference.word2id = data.training_dataset.word2id
     cfg.inference.id2word = data.training_dataset.id2word
@@ -64,6 +66,7 @@ def main(cfg):
         filename=train_path.stem+"_log_"+"-{epoch:02d}-{val_loss:.2f}",
         mode="min",
         save_top_k=-1,
+        save_on_train_epoch_end=True,
     )
 
     if cfg.resume_from_checkpoint:
@@ -79,8 +82,9 @@ def main(cfg):
         path_to_restart = None
 
     trainer = pl.Trainer(
-        strategy="ddp",
-        gpus=cfg.gpu,
+        strategy=DDPStrategy(find_unused_parameters=False),
+        accelerator=cfg.accelerator,
+        devices=cfg.accelerator_devices,
         max_epochs=cfg.epochs,
         check_val_every_n_epoch=cfg.check_val_every_n_epoch,
         num_sanity_val_steps=cfg.num_sanity_val_steps,
