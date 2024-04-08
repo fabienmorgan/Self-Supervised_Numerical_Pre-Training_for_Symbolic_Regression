@@ -1471,11 +1471,11 @@ class DataModule(pl.LightningDataModule):
         """returns training dataloader"""
         trainloader = torch.utils.data.DataLoader(
             self.training_dataset,
-            batch_size=self.cfg.batch_size//self.cfg.accelerator_devices,
+            batch_size=self.cfg.host_system_config.batch_size//self.cfg.host_system_config.accelerator_devices,
             shuffle=True,
             drop_last=True,
             collate_fn=partial(custom_collate_fn, total_variables=self.training_dataset.total_variables, total_coefficients=self.training_dataset.total_coefficients, cfg= self.cfg),
-            num_workers=self.cfg.num_of_workers,
+            num_workers=self.cfg.host_system_config.num_of_workers,
             pin_memory=True,
             #worker_init_fn=self.worker_init_fn
         )
@@ -1490,10 +1490,10 @@ class DataModule(pl.LightningDataModule):
             dataset, curr_cfg, dataloader_info = curr
             validloader = torch.utils.data.DataLoader(
                 dataset,
-                batch_size=self.cfg.batch_size,
+                batch_size=self.cfg.host_system_config.batch_size,
                 shuffle=False,
                 collate_fn=partial(custom_collate_fn,total_variables=self.training_dataset.total_variables, total_coefficients=self.training_dataset.total_coefficients, cfg= curr_cfg),
-                num_workers=min(0,self.cfg.num_of_workers),
+                num_workers=min(0,self.cfg.host_system_config.num_of_workers),
                 pin_memory=True,
                 drop_last=False,
                 worker_init_fn=self.worker_init_fn
@@ -1514,7 +1514,7 @@ class DataModule(pl.LightningDataModule):
             batch_size=1,
             shuffle=False,
             collate_fn=partial(custom_collate_fn,cfg=self.cfg.dataset_test),
-            num_workers=self.cfg.num_of_workers,
+            num_workers=self.cfg.host_system_config.num_of_workers,
             pin_memory=True,
             drop_last=False
         )

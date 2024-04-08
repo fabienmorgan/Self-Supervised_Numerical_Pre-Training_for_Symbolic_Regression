@@ -18,8 +18,8 @@ lr_monitor = LearningRateMonitor(logging_interval='step')
 @hydra.main(config_name="config", version_base="1.2", config_path="")
 def main(cfg):
     #seed_everything(9)
-    train_path = Path(hydra.utils.to_absolute_path(cfg.train_path))
-    benchmark_path = Path(hydra.utils.to_absolute_path(cfg.benchmark_path))
+    train_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.train_path))
+    benchmark_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.benchmark_path))
     data = DataModule(
         train_path,
         benchmark_path,
@@ -43,17 +43,17 @@ def main(cfg):
   
     
 
-    if cfg.resume_from_checkpoint:
-        candidate_path = Path(hydra.utils.to_absolute_path(cfg.resume_from_checkpoint))
+    if cfg.host_system_config.resume_from_checkpoint:
+        candidate_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint))
         # Check if the path is a file or a directory
         if candidate_path.is_file():
             is_folder = False
-            checkpoint_dir_path = Path(hydra.utils.to_absolute_path(cfg.resume_from_checkpoint)).parent
-            logs_save_dir_path = Path(hydra.utils.to_absolute_path(cfg.resume_from_checkpoint)).parent.parent / "logs_dir"
+            checkpoint_dir_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint)).parent
+            logs_save_dir_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint)).parent.parent / "logs_dir"
         elif candidate_path.is_dir():
             is_folder = True
-            checkpoint_dir_path = Path(hydra.utils.to_absolute_path(cfg.resume_from_checkpoint))
-            logs_save_dir_path = Path(hydra.utils.to_absolute_path(cfg.resume_from_checkpoint)).parent / "logs_dir"
+            checkpoint_dir_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint))
+            logs_save_dir_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint)).parent / "logs_dir"
 
         logger = pl_loggers.TensorBoardLogger(save_dir=logs_save_dir_path, sub_dir="logs/", name="", version="")
     else:
@@ -69,7 +69,7 @@ def main(cfg):
         save_on_train_epoch_end=True,
     )
 
-    if cfg.resume_from_checkpoint:
+    if cfg.host_system_config.resume_from_checkpoint:
         print("Resuming from checkpoint")
         if is_folder:
             # Find the latest checkpoint
@@ -77,18 +77,18 @@ def main(cfg):
             checkpoints.sort(key=os.path.getmtime)
             path_to_restart = checkpoints[-1]
         else:
-            path_to_restart = Path(hydra.utils.to_absolute_path(cfg.resume_from_checkpoint))
+            path_to_restart = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint))
     else:
         path_to_restart = None
 
     trainer = pl.Trainer(
         strategy=DDPStrategy(find_unused_parameters=False),
-        accelerator=cfg.accelerator,
-        devices=cfg.accelerator_devices,
+        accelerator=cfg.host_system_config.accelerator,
+        devices=cfg.host_system_config.accelerator_devices,
         max_epochs=cfg.epochs,
         check_val_every_n_epoch=cfg.check_val_every_n_epoch,
         num_sanity_val_steps=cfg.num_sanity_val_steps,
-        precision=cfg.precision,
+        precision=cfg.host_system_config.precision,
         callbacks=[checkpoint_callback, lr_monitor],
         resume_from_checkpoint=path_to_restart,
         logger=wandb_logger,

@@ -244,7 +244,7 @@ class Model(pl.LightningModule):
         return loss_total
     #[x[1]["cost_to_pointer"] for x in batch[2]]
     def training_step(self, batch, _):
-        if self.cnt_ep > 4 and self.cfg.resume_from_checkpoint:
+        if self.cnt_ep > 4 and self.cfg.host_system_config.resume_from_checkpoint:
             raise MemoryError("Memory error")
         if batch[0].shape[0] == None:
             return None
@@ -319,8 +319,8 @@ class Model(pl.LightningModule):
         # breakpoint()
         # Save the dictionary in a folder in res folder
 
-        if self.cfg.resume_from_checkpoint != "":
-            root_path = Path(hydra.utils.to_absolute_path(self.cfg.resume_from_checkpoint)).parent
+        if self.cfg.host_system_config.resume_from_checkpoint != "":
+            root_path = Path(hydra.utils.to_absolute_path(self.cfg.host_system_config.resume_from_checkpoint)).parent
             folder_name = root_path / Path(f"res/{self.current_epoch}")
         else:
             folder_name = Path(f"res/{self.current_epoch}")

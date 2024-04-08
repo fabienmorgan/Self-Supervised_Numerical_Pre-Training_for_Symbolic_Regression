@@ -38,3 +38,4 @@ ControllableNeuralSymbolicRegressionWeights/*
 ControllableNeuralSymbolicRegressionWeights*
 bash_scripts/*
 training_dataset/*
+train_data/*

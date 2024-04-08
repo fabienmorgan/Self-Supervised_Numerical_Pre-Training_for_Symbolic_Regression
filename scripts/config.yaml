@@ -1,11 +1,9 @@
-# Need to point to the correct paths
-train_path: training_dataset/raw_datasets/200000
-benchmark_path: test_set
+defaults:
+  - host_system_config: host
 
 
 
 max_description_seq_len: 500
-
 
 ### Checkpointing
 checkpointing: True  
@@ -13,29 +11,16 @@ number_of_test: 20
 name: results
 ####
 
-### Test (Not influence the training)
-model_path: run/False/2022-11-07/13-46-03/Exp_weights/1000000_log_-epoch=104-val_loss=0.00.ckpt
-### 
-
 
 # Training parameters
-num_of_workers: 6
 check_val_every_n_epoch: 5 # Number of epochs between each benchmarking
-batch_size: 50 # 50 ideal if gpu(rtx 3080) is empty 
 num_sanity_val_steps: 0 # Number of sanity validation steps
-epochs: 10000
-precision: 16
-accelerator: "gpu" # Use gpu 
-accelerator_devices: 1 # Number of the gpu to use
-resume_from_checkpoint: ""
+epochs: 2
 is_debug: False # Should be always False, used for checking the code.
 
 
-
-path_to_candidate: configs/equations_ops_3_5000.json # This is the file that contains the negative equations from which the model will sample the absent branches
-
 dataset:
-  epoch_len: 1000000 # Number of equations per epoch
+  epoch_len: 1000 # Number of equations per epoch
   total_variables: #Do not fill
   total_coefficients: #Do not fill
   max_number_of_points: 1000 
@@ -133,7 +118,7 @@ contrastive_learning:
   lambda_mse: 1
   lambda_cross_entropy: 1
 
-# @package _group_
+ # @package _group_
 hydra:
   run:
     dir: run/${architecture.predict_constants}/${now:%Y-%m-%d}/${now:%H-%M-%S}
