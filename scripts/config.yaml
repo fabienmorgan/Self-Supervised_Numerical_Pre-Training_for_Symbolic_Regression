@@ -118,7 +118,7 @@ contrastive_learning:
   lambda_mse: 1
   lambda_cross_entropy: 1
 
- # @package _group_
+# @package _group_
 hydra:
   run:
     dir: run/${architecture.predict_constants}/${now:%Y-%m-%d}/${now:%H-%M-%S}

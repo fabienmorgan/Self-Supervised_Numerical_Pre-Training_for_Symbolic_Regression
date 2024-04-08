@@ -215,6 +215,8 @@ class Model(pl.LightningModule):
         total_loss = summed_xy_loss + summed_yx_loss
         contrastive_loss = - (total_loss / set_trf_output.shape[0])
 
+        assert contrastive_loss >= 0
+
         return contrastive_loss
 
     def compute_loss(self,output, trg, set_trf_contrastive=None, skeleton_enc_contrastive=None):
