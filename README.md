@@ -113,7 +113,7 @@ python scripts/train.py  train_path=target_folder/datasets/2000000 benchmark_pat
 Note that by default the model will test on the benchmark dataset every check_val_every_n_epoch epochs. Please note that if you have not created the benchmark dataset, you will neet to avoid validation by setting check_val_every_n_epoch to a very large number (e.g., 1000000) and saving the model according to the steps.
 
 ## Host Configuration
-Because the training hardware is individual the host configuration is not checked in and needs to be manually added into the folder host_system_config. The host config needs these seven parameters:  
+Because the training hardware is individual the host configuration is not checked in and needs to be manually added as a host.yaml file into the folder host_system_config. This folder needs to be created in the scripts folder. The host config needs these seven parameters:  
 `train_path`  
 `benchmark_path`  
 `model_path`  
