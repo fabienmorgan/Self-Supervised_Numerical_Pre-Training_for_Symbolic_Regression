@@ -112,17 +112,38 @@ python scripts/train.py  train_path=target_folder/datasets/2000000 benchmark_pat
 
 Note that by default the model will test on the benchmark dataset every check_val_every_n_epoch epochs. Please note that if you have not created the benchmark dataset, you will neet to avoid validation by setting check_val_every_n_epoch to a very large number (e.g., 1000000) and saving the model according to the steps.
 
-## Citation
+## Host Configuration
+Because the training hardware is individual the host configuration is not checked in and needs to be manually added into the folder host_system_config. The host config needs these seven parameters:  
+`train_path`  
+`benchmark_path`  
+`model_path`  
+`num_of_workers`  
+`batch_size`  
+`precision`  
+`accelerator`  
+`accelerator_devices`  
+`resume_from_checkpoint`  
+`path_to_candidates` 
 
-If you use this code or our results in your research, please cite the following paper:
-``` 
-@article{bendinelli2023controllable,
-  title={Controllable Neural Symbolic Regression},
-  author={Bendinelli, Tommaso and Biggio, Luca and Kamienny, Pierre-Alexandre},
-  journal={arXiv preprint arXiv:2304.10336},
-  year={2023}
-}
-``` 
+An example of this file could look like this (host.yaml):  
+``` yaml
+# Need to point to the correct paths
+train_path: training_dataset/raw_datasets/1000
+benchmark_path: test_set
+
+### Test (Not influence the training)
+model_path: run/False/2022-11-07/13-46-03/Exp_weights/1000000_log_-epoch=104-val_loss=0.00.ckpt
+### 
+
+num_of_workers: 6
+batch_size: 50 # 50 ideal if gpu(rtx 3080) is empty 
+precision: 16
+accelerator: "gpu" # Use gpu 
+accelerator_devices: 1 # Number of the gpu to use
+resume_from_checkpoint: ""
+
+path_to_candidate: configs/equations_ops_3_5000.json # This is the file that contains the negative equations from which the model will sample the absent branches 
+```
 
 
 ## License
