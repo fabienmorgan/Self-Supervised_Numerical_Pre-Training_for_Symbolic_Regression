@@ -1,0 +1,101 @@
+max_description_seq_len: 500
+checkpointing: True  
+number_of_test: 20
+name: results
+check_val_every_n_epoch: 5
+num_sanity_val_steps: 0 
+epochs: 2
+is_debug: False 
+dataset:
+  epoch_len: 1000 
+  total_variables: 
+  total_coefficients: 
+  max_number_of_points: 1000 
+  type_of_sampling_points: uniform
+  fun_support:
+    max: 10
+    min: -10
+    min_len: 1
+  constants:
+    enabled: True
+    num_constants: 6
+    additive:
+      max: 10
+      min: -10
+    multiplicative:
+      max: 10
+      min: 0.05
+  number_of_complexity_classes: 30 
+  conditioning: 
+    mode: False 
+    name: "train"
+    prob_symmetry: 0.2
+    prob_complexity: 0.3
+    positive:
+      prob: 0.3
+      min_percent: 0
+      max_percent: 1
+      prob_pointers: 0.15
+    negative:
+      prob: 0.3
+      min_percent: 0
+      max_percent: 1      
+      k: 4
+      sampling_type: squared
+
+
+
+architecture:
+  sinuisodal_embeddings: False
+  dec_pf_dim: 512
+  dec_layers: 5
+  dim_hidden: 512
+  lr: 0.0001
+  dropout: 0
+  cond_num_layers: 3
+  num_features: 32
+  ln: True
+  N_p: 0
+  num_inds: 100
+  activation: "ReLU"
+  bit16: True
+  norm: True
+  linear: False
+  input_normalization: False
+  src_pad_idx: 0
+  trg_pad_idx: 0
+  length_eq: 60
+  n_l_enc: 5
+  mean: 0.5  
+  std: 0.5 
+  dim_input: 6
+  num_heads: 8
+  number_possible_tokens: 90
+  num_tokens_condition: 150
+  embedding_dim_condition: 512
+  conditioning: False
+  concat: True
+  predict_constants: c
+  wupsteps: 4000
+inference:
+  beam_size: 10
+  word2id: ?? 
+  id2word: ??
+  total_variables: ??
+  n_jobs: 1
+  bfgs:
+    activated: False
+    not_activated_no_fit: True
+    n_restarts: 10
+    add_coefficients_if_not_existing: False
+    normalization_o: False
+    idx_remove: True
+    normalization_type: MSE
+    stop_time: 1e9
+contrastive_learning:
+  enabled: True
+  temperature: 1.0
+  contrastive_dim: 512 
+  lambda_contrastive: 0.1
+  lambda_mse: 1
+  lambda_cross_entropy: 1

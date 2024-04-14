@@ -101,3 +101,10 @@ inference:
     idx_remove: true
     normalization_type: MSE
     stop_time: 1000000000.0
+contrastive_learning:
+  enabled: False
+  temperature: 1.0
+  contrastive_dim: 512 
+  lambda_contrastive: 0.1
+  lambda_mse: 1
+  lambda_cross_entropy: 1

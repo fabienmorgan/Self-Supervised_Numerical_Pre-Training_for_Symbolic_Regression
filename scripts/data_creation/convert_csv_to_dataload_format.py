@@ -26,7 +26,7 @@ import h5py
 
 
 @click.command()
-@click.option("--folder_csv", default="test_set/icml2023")
+@click.option("--folder_csv", default="test_set/")
 def converter(folder_csv):
     """
     This scripts iterate over all datasets in iclr2023 and create a validation dataloader for each dataset.

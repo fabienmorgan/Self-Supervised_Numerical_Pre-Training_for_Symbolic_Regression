@@ -487,12 +487,21 @@ class Model(pl.LightningModule):
             te = self.tok_embedding(generated[:, :cur_len])
             trg_ = self.dropout(te + pos)
 
-            output = self.decoder_transfomer(
-                trg_.permute(1, 0, 2),
-                src_enc.permute(1, 0, 2),
-                generated_mask2.float(),
-                tgt_key_padding_mask=generated_mask1.bool(),
-            )
+            if self.cfg.contrastive_learning.enabled == True:
+                skeleton_output = self.skeleton_enc(trg_.permute(1, 0, 2))
+                output = self.decoder_transfomer(
+                    skeleton_output, 
+                    src_enc.permute(1, 0, 2), 
+                    generated_mask2.float(), 
+                    tgt_key_padding_mask=generated_mask1.bool())
+            else:
+                output = self.decoder_transfomer(
+                    trg_.permute(1, 0, 2),
+                    src_enc.permute(1, 0, 2),
+                    generated_mask2.float(),
+                    tgt_key_padding_mask=generated_mask1.bool(),
+                )
+
             output = self.fc_out(output)
             output = output.permute(1, 0, 2).contiguous()
             
