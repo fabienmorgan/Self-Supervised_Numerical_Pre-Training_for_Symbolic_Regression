@@ -10,6 +10,7 @@ import hydra
 from pathlib import Path
 from pytorch_lightning import loggers as pl_loggers
 from lightning.pytorch.loggers import WandbLogger
+from omegaconf import OmegaConf
 
 
 
@@ -27,6 +28,8 @@ def main(cfg):
     )
 
     wandb_logger = WandbLogger(project="MMSR", entity="fabien-morgan")
+    cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+    wandb_logger.experiment.config.update(cfg_dict)
 
     cfg.inference.word2id = data.training_dataset.word2id
     cfg.inference.id2word = data.training_dataset.id2word
