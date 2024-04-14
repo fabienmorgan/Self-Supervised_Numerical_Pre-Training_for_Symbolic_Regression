@@ -96,6 +96,6 @@ contrastive_learning:
   enabled: True
   temperature: 1.0
   contrastive_dim: 512 
-  lambda_contrastive: 0.1
+  lambda_contrastive: 1
   lambda_mse: 1
   lambda_cross_entropy: 1

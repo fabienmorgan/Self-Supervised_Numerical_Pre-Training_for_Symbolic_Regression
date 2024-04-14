@@ -39,8 +39,6 @@ def main(cfg):
     model.mapper = data.mapper 
     model.metadata = data.training_dataset.metadata
     model.cfg.inference.id2word = data.training_dataset.id2word
-
-  
     
 
     if cfg.host_system_config.resume_from_checkpoint:

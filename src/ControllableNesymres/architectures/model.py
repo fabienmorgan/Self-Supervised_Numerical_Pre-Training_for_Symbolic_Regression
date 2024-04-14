@@ -219,15 +219,14 @@ class Model(pl.LightningModule):
 
         return contrastive_loss
 
-    def compute_loss(self,output, trg, set_trf_contrastive=None, skeleton_enc_contrastive=None):
+    def compute_cross_entropy_loss(self,output, trg):
         output = output.permute(1, 0, 2).contiguous().view(-1, output.shape[-1])
         trg = trg[:, 1:].contiguous().view(-1)
         loss = self.criterion(output, trg)
-        if skeleton_enc_contrastive is None and set_trf_contrastive is None:
-            return loss
-        else:
-            contrastive_loss = self.compute_contrastive_loss(set_trf_contrastive, skeleton_enc_contrastive)
-            return (loss * self.cfg.contrastive_learning.lambda_cross_entropy + 
+        return loss
+        
+    def compute_mmsr_loss(self, cross_entropy_loss, contrastive_loss):
+        return (cross_entropy_loss * self.cfg.contrastive_learning.lambda_cross_entropy + 
                     contrastive_loss * self.cfg.contrastive_learning.lambda_contrastive)
 
 
@@ -275,7 +274,15 @@ class Model(pl.LightningModule):
         self.target_expr.update(target_expr)
         self.cnt = self.cnt + 1
 
-        loss = self.compute_loss(output,trg,set_trf_output,skeleton_output)
+        loss = self.compute_cross_entropy_loss(output,trg)
+
+        if self.cfg.contrastive_learning.enabled == True:
+            contrastive_loss = self.compute_contrastive_loss(set_trf_output, skeleton_output)
+            self.log("train_cross_entropy_loss", loss, on_epoch=True, batch_size=batch[0].shape[0])
+            self.log("train_contrastive_loss", contrastive_loss, on_epoch=True, batch_size=batch[0].shape[0])
+
+            loss = self.compute_mmsr_loss(loss, contrastive_loss)
+
         self.log("train_loss", loss, on_epoch=True, batch_size=batch[0].shape[0])
         return loss   
 
@@ -286,7 +293,7 @@ class Model(pl.LightningModule):
             return 0
 
         output, trg = self.forward(batch)
-        loss = self.compute_loss(output,trg)
+        loss = self.compute_cross_entropy_loss(output,trg)
         dataset_name = self.mapper[dataloader_idx]
         self.log(f"val_loss_{dataset_name}", loss, on_epoch=True, sync_dist=True, add_dataloader_idx=False)
         
