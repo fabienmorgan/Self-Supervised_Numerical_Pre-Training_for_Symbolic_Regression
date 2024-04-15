@@ -8,11 +8,17 @@ from pathlib import Path
 from functools import partial
 
 def main():
-    #cfg =  omegaconf.OmegaConf.load(Path("configs/mmsr_config.yaml"))
-    #hardware_cfg = omegaconf.OmegaConf.load('configs/host_system_config/host.yaml')
+    model_type = "nsr"
 
-    #cfg = omegaconf.OmegaConf.merge(cfg, hardware_cfg)
-    cfg = omegaconf.OmegaConf.load(Path('configs/nsr_network_config.yaml'))
+    if model_type == "mmsr":
+        cfg =  omegaconf.OmegaConf.load(Path("configs/mmsr_config.yaml"))
+        hardware_cfg = omegaconf.OmegaConf.load('configs/host_system_config/host.yaml')
+        cfg = omegaconf.OmegaConf.merge(cfg, hardware_cfg)
+
+        model = 'weights/200000_log_-epoch=11-val_loss=0.00.ckpt'
+    else:
+        cfg = omegaconf.OmegaConf.load(Path('configs/nsr_network_config.yaml'))
+        model = 'model/ControllableNeuralSymbolicRegressionWeights/nsr_200000000_epoch=149.ckpt'
 
     cfg.inference.bfgs.activated = True
     cfg.inference.bfgs.n_restarts=10
@@ -36,13 +42,10 @@ def main():
             drop_last=False
         )
 
-    #nsrwh = 'weights/200000_log_-epoch=11-val_loss=0.00.ckpt'
-    nsrwh = 'model/ControllableNeuralSymbolicRegressionWeights/nsr_200000000_epoch=149.ckpt'
-
     if torch.cuda.is_available():
-        fitfunc = return_fitfunc(cfg, metadata, nsrwh, device="cuda")
+        fitfunc = return_fitfunc(cfg, metadata, model, device="cuda")
     else:
-        fitfunc = return_fitfunc(cfg, metadata, nsrwh, device="cpu")
+        fitfunc = return_fitfunc(cfg, metadata, model, device="cpu")
 
     cond = {'symbolic_conditioning': torch.tensor([[1, 2]]), 'numerical_conditioning': torch.tensor([])}
 
@@ -55,8 +58,8 @@ def main():
         cond["numerical_conditioning"] = cond["numerical_conditioning"].unsqueeze(0) 
         outputs = fitfunc(X, y, cond, is_batch=True)
 
-        print('True equation: ', inputs[2])
-        print('Predicted equation: ', outputs)
+        print('True equation: ', inputs[2][0][0])
+        print('Predicted equation: ', outputs['best_pred'])
     
     
 
