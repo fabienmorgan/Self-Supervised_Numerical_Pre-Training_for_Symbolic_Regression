@@ -818,6 +818,9 @@ def from_hyps_to_expr(hypotheses_i, X_i,y_i, cond_i, cond_str_i, val_X=None, val
         elif cfg_params.bfgs.activated and len(symbols) ==  0:
             infix = infix_with_c
 
+        elif not cfg_params.bfgs.activated and len(symbols) == 0:
+            infix = infix_with_c
+
         else:
             raise ValueError("This should not happen")
 
