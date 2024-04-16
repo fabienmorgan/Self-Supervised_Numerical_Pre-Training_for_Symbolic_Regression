@@ -1,4 +1,5 @@
 import os
+import wandb
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.strategies import DDPStrategy
@@ -27,9 +28,9 @@ def main(cfg):
         cfg
     )
 
-    wandb_logger = WandbLogger(project="MMSR", entity="fabien-morgan")
     cfg_dict = OmegaConf.to_container(cfg, resolve=True)
-    wandb_logger.experiment.config.update(cfg_dict)
+
+    wandb_logger = WandbLogger(project="MMSR", entity="fabien-morgan", config=cfg_dict, log_model=True)
 
     cfg.inference.word2id = data.training_dataset.word2id
     cfg.inference.id2word = data.training_dataset.id2word
@@ -96,7 +97,11 @@ def main(cfg):
         resume_from_checkpoint=path_to_restart,
         logger=wandb_logger,
     )
+
+    wandb_logger.watch(model, log_freq=10)
     trainer.fit(model, data)
+
+    wandb.finish()
 
 
 if __name__ == "__main__":
