@@ -49,17 +49,19 @@ def main(cfg):
         # Check if the path is a file or a directory
         if candidate_path.is_file():
             is_folder = False
-            checkpoint_dir_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint)).parent
+            checkpoint_absolut_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint)).parent
             logs_save_dir_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint)).parent.parent / "logs_dir"
         elif candidate_path.is_dir():
             is_folder = True
-            checkpoint_dir_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint))
+            checkpoint_absolut_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint))
             logs_save_dir_path = Path(hydra.utils.to_absolute_path(cfg.host_system_config.resume_from_checkpoint)).parent / "logs_dir"
 
         logger = pl_loggers.TensorBoardLogger(save_dir=logs_save_dir_path, sub_dir="logs/", name="", version="")
     else:
         logger = pl_loggers.TensorBoardLogger(save_dir="logs_dir/", sub_dir="logs/", name="", version="")
-        checkpoint_dir_path = "exp_weights/"
+        
+        
+    checkpoint_dir_path = "exp_weights/"
     
     checkpoint_callback = ModelCheckpoint(
         #monitor="train_loss", #/dataloader_idx_0",
@@ -74,7 +76,7 @@ def main(cfg):
         print("Resuming from checkpoint")
         if is_folder:
             # Find the latest checkpoint
-            checkpoints = list(checkpoint_dir_path.glob("*.ckpt"))
+            checkpoints = list(checkpoint_absolut_path.glob("**/*.ckpt"))
             checkpoints.sort(key=os.path.getmtime)
             path_to_restart = checkpoints[-1]
         else:
