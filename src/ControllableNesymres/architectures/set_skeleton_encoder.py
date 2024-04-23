@@ -15,12 +15,12 @@ class SetSkeletonEncoder(pl.LightningModule):
         )
         self.norm2 = nn.LayerNorm(cfg.dim_hidden)        
 
-    def forward(self, x):
+    def forward(self, x, attention_mask = None):
         x_res1 = x
-        x, _ = self.multihead_attention1(x, x, x, need_weights = False)
+        x, _ = self.multihead_attention1(x, x, x, attn_mask=attention_mask, need_weights = False)
         x = self.norm1(x + x_res1)
         x_res2 = x
-        x, _ = self.multihead_attention2(x, x, x, need_weights = False)
+        x, _ = self.multihead_attention2(x, x, x, attn_mask=attention_mask, need_weights = False)
         x = self.ffn(x)
         x = self.norm2(x + x_res2)
         return x

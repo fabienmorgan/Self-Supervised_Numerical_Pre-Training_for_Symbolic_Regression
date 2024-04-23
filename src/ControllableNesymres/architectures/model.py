@@ -172,7 +172,7 @@ class Model(pl.LightningModule):
         trg_ = self.dropout(te + pos)
 
         if self.cfg.contrastive_learning.enabled:
-            skeleton_output = self.skeleton_enc(trg_.permute(1, 0, 2))
+            skeleton_output = self.skeleton_enc(trg_.permute(1, 0, 2), trg_mask2.bool())
             output = self.decoder_transfomer(skeleton_output, enc_src.permute(1, 0, 2), trg_mask2.bool(), tgt_key_padding_mask=trg_mask1.bool())
             contrastive_skeleton = self.compute_contrastive_tensor(skeleton_output.permute(1, 0, 2))
             contrastive_encoder = self.compute_contrastive_tensor(enc_src)
