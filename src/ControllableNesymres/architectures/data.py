@@ -923,6 +923,13 @@ class ControllableNesymresDataset(data.Dataset):
        
         # Load the equation from the hdf5
         eq = load_eq(self.data_path, index, self.eqs_per_hdf)
+
+        eq_support =  eval(eq.support)
+        for key,_ in eq_support.items():
+            eq_support[key]["min"] = self.cfg.dataset.fun_support.min
+            eq_support[key]["max"] = self.cfg.dataset.fun_support.max
+        eq.support = repr(eq_support)
+            
         
         # Sample the constants for the equation
         consts, _ = sample_symbolic_constants(eq, self.cfg.dataset.constants)

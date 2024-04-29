@@ -5,12 +5,13 @@ import ControllableNesymres.architectures.data as Data
 import torch
 import omegaconf
 import pandas as pd
-import os
 import sympy as sp
 
-import random
 import numpy as np
+
+#TO DELETE
 import math
+import random
 
 from pathlib import Path
 from functools import partial
@@ -28,15 +29,42 @@ def robust_dataloader(test_loader):
             pass 
         
 def main():
-    """seed = 22 #6, 11
+    seed = 22
 
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)"""
+        torch.cuda.manual_seed_all(seed)
 
-    model_type = "mmsr"
+    operators = {
+    'abs': np.abs,
+    'acos': np.arccos,
+    'add': np.add,
+    'asin': np.arcsin,
+    'atan': np.arctan,
+    'cos': np.cos,
+    'cosh': np.cosh,
+    'coth': lambda x: 1/np.tanh(x),
+    'div': np.divide,
+    'exp': np.exp,
+    'inv': np.reciprocal,
+    'ln': np.log,
+    'mul': np.multiply,
+    'pow': np.power,
+    'pow2': lambda x: np.power(x, 2),
+    'pow3': lambda x: np.power(x, 3),
+    'pow4': lambda x: np.power(x, 4),
+    'pow5': lambda x: np.power(x, 5),
+    'sin': np.sin,
+    'sinh': np.sinh,
+    'sqrt': np.sqrt,
+    'sub': np.subtract,
+    'tan': np.tan,
+    'tanh': np.tanh
+    }
+
+    model_type = "nsr"
     test_path = 'data/benchmark/train_nc'
 
     if model_type == "mmsr":
@@ -44,7 +72,7 @@ def main():
         hardware_cfg = omegaconf.OmegaConf.load('configs/host_system_config/host.yaml')
         cfg = omegaconf.OmegaConf.merge(cfg, hardware_cfg)
 
-        model = 'weights/10000000_log_-epoch=94-val_loss=0.00.ckpt'
+        model = 'weights/10000000_log_-epoch=61-val_loss=0.00.ckpt'
     else:
         cfg = omegaconf.OmegaConf.load(Path('configs/nsr_network_config.yaml'))
         model = 'model/ControllableNeuralSymbolicRegressionWeights/nsr_200000000_epoch=149.ckpt'
@@ -52,8 +80,8 @@ def main():
     cfg.inference.bfgs.activated = False
     cfg.inference.bfgs.n_restarts=10
     cfg.inference.n_jobs=1
-    cfg.dataset.fun_support.max =5
-    cfg.dataset.fun_support.min = -5
+    cfg.dataset.fun_support.max = 100
+    cfg.dataset.fun_support.min = -100
     cfg.inference.beam_size = 5
 
     metadata = load_metadata_hdf5(Path(test_path))
@@ -85,29 +113,38 @@ def main():
     match_equations = []
     r2_scores = []
 
-    count = 0
-
     x_1, x_2, x_3, x_4, x_5 = sp.symbols('x_1 x_2 x_3 x_4 x_5')
 
     for idx, inputs in enumerate(robust_dataloader(testloader)):
+        if idx == 0:
+            continue
+        b = inputs[0].permute(0, 2, 1).to("cuda")
+        X = b[:, :, :-1]
+        y = b[:, :, -1]    
+
+        X = X.half()
+        outputs = fitfunc(X, y, cond, is_batch=True)
+
+        if outputs['best_pred'] == 'illegal parsing infix':
+            match_equations.append(0)
+            r2_scores.append(float('nan'))
+            true_equations.append(inputs[2][0][0])
+            predicted_equations.append('Equation is syntactically incorrect')
+            continue
+
+        variables = X[0, :, :].cpu()
+
+        x_1, x_2, x_3, x_4, x_5 = sp.symbols('x_1 x_2 x_3 x_4 x_5')
+
+        equation = sp.lambdify((x_1, x_2, x_3, x_4, x_5), outputs['best_pred'], modules=['numpy', operators])
+
         try:
-            if idx == 0:
-                continue
-            b = inputs[0].permute(0, 2, 1).to("cuda")
-            X = b[:, :, :-1]
-            y = b[:, :, -1]    
-
-            X = X.half()
-            outputs = fitfunc(X, y, cond, is_batch=True)
-
-            variables = X[0, :, :].cpu()
-
-            x_1, x_2, x_3, x_4, x_5 = sp.symbols('x_1 x_2 x_3 x_4 x_5')
-
-            equation = sp.lambdify((x_1, x_2, x_3, x_4, x_5), outputs['best_pred'], 'numpy')
-
             results = equation(variables[:,0], variables[:,1], variables[:,2], variables[:,3], variables[:,4])
-
+        except NameError as e:
+            print(f'NameError: {e}')
+            match_equations.append(0)
+            r2_scores.append(float('nan'))
+        else:
             r2 = r2_score(y[0].cpu(), results)
 
             if r2 > 0.99:
@@ -115,15 +152,13 @@ def main():
             else:
                 match_equations.append(0)
 
-            print('True equation: ', inputs[2][0][0])
-            print('Predicted equation: ', outputs['best_pred'])
-            true_equations.append(inputs[2][0][0])
-            predicted_equations.append(outputs['best_pred'])
             r2_scores.append(r2.item())
 
-        except Exception as e:
-            print(e)
-            pass
+        print('True equation: ', inputs[2][0][0])
+        print('Predicted equation: ', outputs['best_pred'])
+        true_equations.append(inputs[2][0][0])
+        predicted_equations.append(outputs['best_pred'])
+
 
     evaluation_of_prediction = pd.DataFrame({
     'True equation': true_equations,
@@ -132,9 +167,13 @@ def main():
     'R2 Score': r2_scores
     })
     
-    evaluation_of_prediction.to_csv(f'evaluation_of_prediction_{model_type}.csv', index=False)
+    evaluation_of_prediction.to_csv(f'evaluation_of_prediction_{model_type}_{Path(test_path).name}_SupportRange{cfg.dataset.fun_support.min}to{cfg.dataset.fun_support.max}.csv', index=False)
 
 def r2_score(y_true, y_pred):
+    assert torch.isnan(y_true).any().item() == False, "y_true has NaN values"
+    if torch.isnan(y_pred).any().item():
+        return torch.tensor([0])
+
     ss_res = torch.sum((y_true - y_pred) ** 2)
     ss_tot = torch.sum((y_true - torch.mean(y_true)) ** 2)
     return 1 - ss_res / ss_tot
