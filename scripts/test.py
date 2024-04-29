@@ -8,6 +8,7 @@ import pandas as pd
 import sympy as sp
 
 import numpy as np
+import json
 
 #TO DELETE
 import math
@@ -15,6 +16,7 @@ import random
 
 from pathlib import Path
 from functools import partial
+import argparse
 
 
 def robust_dataloader(test_loader):
@@ -28,7 +30,7 @@ def robust_dataloader(test_loader):
             print(e)
             pass 
         
-def main():
+def main(model_type, min_support, max_support, test_path):
     seed = 22
 
     random.seed(seed)
@@ -64,9 +66,6 @@ def main():
     'tanh': np.tanh
     }
 
-    model_type = "nsr"
-    test_path = 'data/benchmark/train_nc'
-
     if model_type == "mmsr":
         cfg =  omegaconf.OmegaConf.load(Path("configs/mmsr_config.yaml"))
         hardware_cfg = omegaconf.OmegaConf.load('configs/host_system_config/host.yaml')
@@ -80,8 +79,8 @@ def main():
     cfg.inference.bfgs.activated = False
     cfg.inference.bfgs.n_restarts=10
     cfg.inference.n_jobs=1
-    cfg.dataset.fun_support.max = 100
-    cfg.dataset.fun_support.min = -100
+    cfg.dataset.fun_support.max = max_support
+    cfg.dataset.fun_support.min = min_support
     cfg.inference.beam_size = 5
 
     metadata = load_metadata_hdf5(Path(test_path))
@@ -145,6 +144,9 @@ def main():
             match_equations.append(0)
             r2_scores.append(float('nan'))
         else:
+            if isinstance(results, (int, float)) and results == 0:
+                results = torch.zeros(variables.shape[0])
+
             r2 = r2_score(y[0].cpu(), results)
 
             if r2 > 0.99:
@@ -167,7 +169,25 @@ def main():
     'R2 Score': r2_scores
     })
     
-    evaluation_of_prediction.to_csv(f'evaluation_of_prediction_{model_type}_{Path(test_path).name}_SupportRange{cfg.dataset.fun_support.min}to{cfg.dataset.fun_support.max}.csv', index=False)
+    path = 'evaluation/'
+    file_name = f'evaluation_of_prediction_{model_type}_{Path(test_path).name}_SupportRange{cfg.dataset.fun_support.min}to{cfg.dataset.fun_support.max}'
+
+    filename_csv = f'{file_name}.csv'
+
+    config = {
+        'minimum_support': cfg.dataset.fun_support.min,
+        'maximum_support': cfg.dataset.fun_support.max,
+        'model': model_type,
+        'dataset': Path(test_path).name,
+        'csv_filename': filename_csv
+    }
+
+    filename_config = f'{path}{file_name}.json'
+
+    with open(filename_config, 'w') as f:
+        json.dump(config, f)
+
+    evaluation_of_prediction.to_csv(f'{path}{filename_csv}', index=False)
 
 def r2_score(y_true, y_pred):
     assert torch.isnan(y_true).any().item() == False, "y_true has NaN values"
@@ -180,4 +200,13 @@ def r2_score(y_true, y_pred):
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description='Process the arguments model type, support range, data path')
+
+    parser.add_argument('--min_support', type=int, default=-10, help='The minimum support value')
+    parser.add_argument('--max_support', type=int, default=10, help='The maximum support value')
+    parser.add_argument('--model_type', type=str, default='mmsr', help='The model type')
+    parser.add_argument('--test_path', type=str, default='data/benchmark/train_nc', help='The path of the test data')
+
+    args = parser.parse_args()
+
+    main(args.model_type, args.min_support, args.max_support, args.test_path)
