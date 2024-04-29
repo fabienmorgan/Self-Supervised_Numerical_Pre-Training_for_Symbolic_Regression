@@ -844,6 +844,10 @@ def from_hyps_to_expr(hypotheses_i, X_i,y_i, cond_i, cond_str_i, val_X=None, val
         try:
             f = lambdify(vars_list, infix,  modules=["numpy",{'asin': np.arcsin, "ln": np.log, "Abs": np.abs}])
             y_pred = f(*X_curr.squeeze(0).T)
+            
+            if isinstance(y_pred, (int, float)) and y_pred == 0:
+                y_pred = torch.zeros(X_curr.squeeze(0).shape[0])
+
             if val_X is not None and val_X[0] is not None:
                 y_val_pred = f(*val_X.squeeze(0).T)
             else:
