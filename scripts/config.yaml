@@ -15,7 +15,7 @@ name: results
 # Training parameters
 check_val_every_n_epoch: 5 # Number of epochs between each benchmarking
 num_sanity_val_steps: 0 # Number of sanity validation steps
-epochs: 2
+epochs: 12
 is_debug: False # Should be always False, used for checking the code.
 
 
@@ -23,6 +23,7 @@ dataset:
   epoch_len: 1000 # Number of equations per epoch
   total_variables: #Do not fill
   total_coefficients: #Do not fill
+  min_number_of_points: 100
   max_number_of_points: 1000 
   type_of_sampling_points: uniform
   fun_support:

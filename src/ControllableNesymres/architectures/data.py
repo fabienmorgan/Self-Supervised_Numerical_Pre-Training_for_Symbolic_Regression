@@ -1058,6 +1058,9 @@ def sample_images(lambdify_f, support, variables_str, cfg):
 
 def custom_collate_fn(eqs: List[Equation],  total_variables, total_coefficients, cfg) -> List[torch.tensor]:
     filtered_eqs = [eq for eq in eqs if eq.valid]
+    if not filtered_eqs:
+        return None
+
     res, tokens, conditioning = evaluate_and_wrap(filtered_eqs, total_variables, total_coefficients, cfg)
 
     exprs = [x.info_eq['target_expr'] for x in filtered_eqs]
@@ -1274,13 +1277,13 @@ def tokens_padding(tokens, ):
         p_tokens[i, :] = torch.cat([y, torch.zeros(max_len - y.shape[0])])
     return p_tokens
 
-def number_of_support_points(p, type_of_sampling_points):
+def number_of_support_points(min_number_datapoints, max_number_datapoints, type_of_sampling_points):
     if type_of_sampling_points == "constant":
-        curr_p = p
+        curr_p = max_number_datapoints
     elif type_of_sampling_points == "logarithm":
-        curr_p = int(10 ** Uniform(1, math.log10(p)).sample())
+        curr_p = int(10 ** Uniform(min_number_datapoints, math.log10(max_number_datapoints)).sample())
     elif type_of_sampling_points == "uniform":
-        curr_p = int(Uniform(1, p).sample())
+        curr_p = int(Uniform(min_number_datapoints, max_number_datapoints).sample())
     else:
         raise NameError
     return curr_p
@@ -1340,7 +1343,7 @@ def evaluate_and_wrap(eqs: List[Equation], total_variables, total_coefficients, 
 
 
     tokens_eqs = tokens_padding(tokens_eqs)
-    curr_p = number_of_support_points(cfg.dataset.max_number_of_points, cfg.dataset.type_of_sampling_points)
+    curr_p = number_of_support_points(cfg.dataset.min_number_of_points, cfg.dataset.max_number_of_points, cfg.dataset.type_of_sampling_points)
     vals = [x.data_points[:,:,:curr_p] for x in eqs]
 
     num_tensors = torch.cat(vals, axis=0)

@@ -19,16 +19,6 @@ from functools import partial
 import argparse
 
 
-def robust_dataloader(test_loader):
-    iter_test_loader = iter(test_loader)
-    while True:
-        try:
-            yield next(iter_test_loader)
-        except StopIteration:
-            return 
-        except Exception as e:
-            print(e)
-            pass 
         
 def main(model_type, min_support, max_support, test_path):
     seed = 22
@@ -107,15 +97,12 @@ def main(model_type, min_support, max_support, test_path):
     cond["symbolic_conditioning"] = cond["symbolic_conditioning"].unsqueeze(0)  
     cond["numerical_conditioning"] = cond["numerical_conditioning"].unsqueeze(0) 
 
-    true_equations = []
-    predicted_equations = []
-    match_equations = []
-    r2_scores = []
+    evaluations_list = []
 
     x_1, x_2, x_3, x_4, x_5 = sp.symbols('x_1 x_2 x_3 x_4 x_5')
 
-    for idx, inputs in enumerate(robust_dataloader(testloader)):
-        if idx == 0:
+    for idx, inputs in enumerate(testloader):
+        if idx == 0 or inputs is None:
             continue
         b = inputs[0].permute(0, 2, 1).to("cuda")
         X = b[:, :, :-1]
@@ -124,50 +111,51 @@ def main(model_type, min_support, max_support, test_path):
         X = X.half()
         outputs = fitfunc(X, y, cond, is_batch=True)
 
+        assert y[0].shape[0] == X.squeeze().shape[0], "The number of samples in the input and output tensors are not equal"
+        evaluation_dict = {
+            'Number of Samples': y[0].shape[0],
+            'True Equation': inputs[2][0][0],
+            'Predicted Equation': outputs['best_pred']
+        }
+
         if outputs['best_pred'] == 'illegal parsing infix':
-            match_equations.append(0)
-            r2_scores.append(float('nan'))
-            true_equations.append(inputs[2][0][0])
-            predicted_equations.append('Equation is syntactically incorrect')
+            evaluation_dict.update({
+            'Match Equation': 0,
+            'R2 Score': float('nan'),
+            'Error Message': 'Equation is syntactically incorrect'
+        })
+            evaluations_list.append(evaluation_dict)
             continue
 
         variables = X[0, :, :].cpu()
-
-        x_1, x_2, x_3, x_4, x_5 = sp.symbols('x_1 x_2 x_3 x_4 x_5')
-
         equation = sp.lambdify((x_1, x_2, x_3, x_4, x_5), outputs['best_pred'], modules=['numpy', operators])
 
         try:
-            results = equation(variables[:,0], variables[:,1], variables[:,2], variables[:,3], variables[:,4])
+            results = equation(*variables.permute(1, 0))
         except NameError as e:
-            print(f'NameError: {e}')
-            match_equations.append(0)
-            r2_scores.append(float('nan'))
+            evaluation_dict.update({
+            'Match Equation': 0,
+            'R2 Score': float('nan'),
+            'Error Message': f'NameError: {e}'
+        })
         else:
             if isinstance(results, (int, float)) and results == 0:
                 results = torch.zeros(variables.shape[0])
 
             r2 = r2_score(y[0].cpu(), results)
 
-            if r2 > 0.99:
-                match_equations.append(1)
-            else:
-                match_equations.append(0)
-
-            r2_scores.append(r2.item())
+            evaluation_dict.update({
+            'Match Equation': 1 if r2 > 0.99 else 0,
+            'R2 Score': r2.item(),
+            'Error Message': ''
+        })
 
         print('True equation: ', inputs[2][0][0])
         print('Predicted equation: ', outputs['best_pred'])
-        true_equations.append(inputs[2][0][0])
-        predicted_equations.append(outputs['best_pred'])
+        evaluations_list.append(evaluation_dict)
 
 
-    evaluation_of_prediction = pd.DataFrame({
-    'True equation': true_equations,
-    'Predicted equation': predicted_equations,
-    'Match Equation': match_equations,
-    'R2 Score': r2_scores
-    })
+    evaluation_of_prediction = pd.DataFrame(evaluations_list)
     
     path = 'evaluation/'
     file_name = f'evaluation_of_prediction_{model_type}_{Path(test_path).name}_SupportRange{cfg.dataset.fun_support.min}to{cfg.dataset.fun_support.max}'

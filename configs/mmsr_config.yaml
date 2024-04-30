@@ -10,6 +10,7 @@ dataset:
   epoch_len: 1000 
   total_variables: 
   total_coefficients: 
+  min_number_of_points: 100
   max_number_of_points: 1000 
   type_of_sampling_points: uniform
   fun_support:

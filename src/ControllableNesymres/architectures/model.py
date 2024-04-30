@@ -523,80 +523,79 @@ class Model(pl.LightningModule):
             _scores = scores + beam_scores[:, None].expand_as(scores)  # (bs * beam_size, n_words)
             _scores = _scores.view(bs, cfg_params.beam_size * n_words)  # (bs, beam_size * n_words)
 
-            if True:
-                next_scores, next_words = torch.topk(_scores, 2 * cfg_params.beam_size, dim=1, largest=True, sorted=True)
+            next_scores, next_words = torch.topk(_scores, 2 * cfg_params.beam_size, dim=1, largest=True, sorted=True)
 
-                assert next_scores.size() == next_words.size() == (bs, 2 * cfg_params.beam_size)
-                
-                next_batch_beam = []
-                # if bs>1:
-                #     breakpoint()
-                
-                # for each sentence
-                for sent_id in range(bs):
-                    
-                    done[sent_id] = done[sent_id] or generated_hyps[sent_id].is_done(next_scores[sent_id].max().item())
-                    
-                    if done[sent_id]:
-                        next_batch_beam.extend([(0, cfg_params.word2id["P"], 0)] * cfg_params.beam_size)  # pad the batch
-                        continue
-                    
-                    next_sent_beam = []
-                        
-                    # next words for this sentence
-                    
-                    for idx, value in zip(next_words[sent_id], next_scores[sent_id]):
-
-                        # get beam and word IDs
-                        beam_id =  torch.div(idx, n_words, rounding_mode='floor')
-                        word_id = idx % n_words
-
-                        # end of sentence, or next word
-                        if (
-                            word_id == cfg_params.word2id["F"]
-                            or cur_len + 1 == self.cfg.architecture.length_eq
-                        ):
-                            generated_hyps[sent_id].add(generated[sent_id * cfg_params.beam_size + beam_id,:cur_len].clone().cpu(),value.item())
-                        else:
-                            next_sent_beam.append((value, word_id, sent_id * cfg_params.beam_size +  beam_id))
-
-                        # the beam for next step is full
-                        if len(next_sent_beam) == cfg_params.beam_size:
-                            break
-
-                    # update next beam content
-                    assert (len(next_sent_beam) == 0 if cur_len + 1 == self.cfg.architecture.length_eq else cfg_params.beam_size)
-                    if len(next_sent_beam) == 0:
-                        next_sent_beam = [
-                            (0, self.trg_pad_idx, 0)
-                        ] * cfg_params.beam_size  # pad the batch
-
-
-                    next_batch_beam.extend(next_sent_beam)
-                    assert len(next_batch_beam) == cfg_params.beam_size * (sent_id + 1)
-
-                
-                assert len(next_batch_beam) == bxb
-                beam_scores = torch.tensor(
-                    [x[0] for x in next_batch_beam], device=self.device
-                )  # .type(torch.int64) Maybe #beam_scores.new_tensor([x[0] for x in next_batch_beam])
-                beam_words = torch.tensor(
-                    [x[1] for x in next_batch_beam], device=self.device
-                )  # generated.new([x[1] for x in next_batch_beam])
-                beam_idx = torch.tensor(
-                    [x[2] for x in next_batch_beam], device=self.device
-                )
+            assert next_scores.size() == next_words.size() == (bs, 2 * cfg_params.beam_size)
             
-                generated = generated[beam_idx, :]
-                generated[:,cur_len] = beam_words
-                for k in cache.keys():
-                    if k != "slen":
-                        cache[k] = (cache[k][0][beam_idx], cache[k][1][beam_idx])
+            next_batch_beam = []
+            # if bs>1:
+            #     breakpoint()
+            
+            # for each sentence
+            for sent_id in range(bs):
+                
+                done[sent_id] = done[sent_id] or generated_hyps[sent_id].is_done(next_scores[sent_id].max().item())
+                
+                if done[sent_id]:
+                    next_batch_beam.extend([(0, cfg_params.word2id["P"], 0)] * cfg_params.beam_size)  # pad the batch
+                    continue
+                
+                next_sent_beam = []
+                    
+                # next words for this sentence
+                
+                for idx, value in zip(next_words[sent_id], next_scores[sent_id]):
 
-                # update current length
-                cur_len = cur_len + torch.tensor(
-                    1, device=self.device, dtype=torch.int64
-                )
+                    # get beam and word IDs
+                    beam_id =  torch.div(idx, n_words, rounding_mode='floor')
+                    word_id = idx % n_words
+
+                    # end of sentence, or next word
+                    if (
+                        word_id == cfg_params.word2id["F"]
+                        or cur_len + 1 == self.cfg.architecture.length_eq
+                    ):
+                        generated_hyps[sent_id].add(generated[sent_id * cfg_params.beam_size + beam_id,:cur_len].clone().cpu(),value.item())
+                    else:
+                        next_sent_beam.append((value, word_id, sent_id * cfg_params.beam_size +  beam_id))
+
+                    # the beam for next step is full
+                    if len(next_sent_beam) == cfg_params.beam_size:
+                        break
+
+                # update next beam content
+                assert (len(next_sent_beam) == 0 if cur_len + 1 == self.cfg.architecture.length_eq else cfg_params.beam_size)
+                if len(next_sent_beam) == 0:
+                    next_sent_beam = [
+                        (0, self.trg_pad_idx, 0)
+                    ] * cfg_params.beam_size  # pad the batch
+
+
+                next_batch_beam.extend(next_sent_beam)
+                assert len(next_batch_beam) == cfg_params.beam_size * (sent_id + 1)
+
+            
+            assert len(next_batch_beam) == bxb
+            beam_scores = torch.tensor(
+                [x[0] for x in next_batch_beam], device=self.device
+            )  # .type(torch.int64) Maybe #beam_scores.new_tensor([x[0] for x in next_batch_beam])
+            beam_words = torch.tensor(
+                [x[1] for x in next_batch_beam], device=self.device
+            )  # generated.new([x[1] for x in next_batch_beam])
+            beam_idx = torch.tensor(
+                [x[2] for x in next_batch_beam], device=self.device
+            )
+        
+            generated = generated[beam_idx, :]
+            generated[:,cur_len] = beam_words
+            for k in cache.keys():
+                if k != "slen":
+                    cache[k] = (cache[k][0][beam_idx], cache[k][1][beam_idx])
+
+            # update current length
+            cur_len = cur_len + torch.tensor(
+                1, device=self.device, dtype=torch.int64
+            )
 
         
         cfg_params.id2word[3] = "constant"
@@ -824,7 +823,7 @@ def from_hyps_to_expr(hypotheses_i, X_i,y_i, cond_i, cond_str_i, val_X=None, val
         else:
             raise ValueError("This should not happen")
 
-        y_curr = y_i.squeeze()
+        y_curr = y_i.squeeze().view(-1)
         X_curr = X_i.clone().half()
         try:
             infix = str(parse_expr(infix))

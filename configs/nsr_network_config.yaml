@@ -22,6 +22,7 @@ dataset:
   len: 1000000
   total_variables: null
   total_coefficients: null
+  min_number_of_points: 100
   max_number_of_points: 1000
   type_of_sampling_points: uniform
   noise: false
