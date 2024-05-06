@@ -61,7 +61,7 @@ def main(model_type, min_support, max_support, test_path):
         hardware_cfg = omegaconf.OmegaConf.load('configs/host_system_config/host.yaml')
         cfg = omegaconf.OmegaConf.merge(cfg, hardware_cfg)
 
-        model = 'weights/10000000_log_-epoch=61-val_loss=0.00.ckpt'
+        model = 'weights/10000000_log_-epoch=201-val_loss=0.00.ckpt'
     else:
         cfg = omegaconf.OmegaConf.load(Path('configs/nsr_network_config.yaml'))
         model = 'model/ControllableNeuralSymbolicRegressionWeights/nsr_200000000_epoch=149.ckpt'

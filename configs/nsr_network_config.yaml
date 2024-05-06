@@ -60,6 +60,7 @@ architecture:
   dec_pf_dim: 512
   dec_layers: 5
   dim_hidden: 512
+  skel_enc_layers: 5
   lr: 0.0001
   dropout: 0
   cond_num_layers: 3

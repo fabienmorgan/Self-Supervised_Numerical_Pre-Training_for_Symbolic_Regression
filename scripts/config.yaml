@@ -93,6 +93,7 @@ architecture:
   concat: True
   predict_constants: c # Can be False or "c"
   wupsteps: 4000
+  skel_enc_layers: 5
 
 inference:
   beam_size: 10 # Used in validation

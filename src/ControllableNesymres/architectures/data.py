@@ -924,11 +924,12 @@ class ControllableNesymresDataset(data.Dataset):
         # Load the equation from the hdf5
         eq = load_eq(self.data_path, index, self.eqs_per_hdf)
 
-        eq_support =  eval(eq.support)
-        for key,_ in eq_support.items():
-            eq_support[key]["min"] = self.cfg.dataset.fun_support.min
-            eq_support[key]["max"] = self.cfg.dataset.fun_support.max
-        eq.support = repr(eq_support)
+        if eq.support is not None:
+            eq_support =  eval(eq.support)
+            for key,_ in eq_support.items():
+                eq_support[key]["min"] = self.cfg.dataset.fun_support.min
+                eq_support[key]["max"] = self.cfg.dataset.fun_support.max
+            eq.support = repr(eq_support)
             
         
         # Sample the constants for the equation
@@ -1059,7 +1060,7 @@ def sample_images(lambdify_f, support, variables_str, cfg):
 def custom_collate_fn(eqs: List[Equation],  total_variables, total_coefficients, cfg) -> List[torch.tensor]:
     filtered_eqs = [eq for eq in eqs if eq.valid]
     if not filtered_eqs:
-        return None
+        return None #torch.empty((1, 6, 0)), torch.empty((1,0)), [], {'symbolic_conditioning': [], 'numerical_conditioning': []}
 
     res, tokens, conditioning = evaluate_and_wrap(filtered_eqs, total_variables, total_coefficients, cfg)
 

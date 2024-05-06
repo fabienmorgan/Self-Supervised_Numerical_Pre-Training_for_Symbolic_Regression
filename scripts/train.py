@@ -30,7 +30,7 @@ def main(cfg):
 
     cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-    wandb_logger = WandbLogger(project="MMSR", entity="fabien-morgan", config=cfg_dict, log_model=True)
+    #wandb_logger = WandbLogger(project="MMSR", entity="fabien-morgan", config=cfg_dict, log_model=True, resume='allow', id='RUN_ID', save_model=False)
 
     cfg.inference.word2id = data.training_dataset.word2id
     cfg.inference.id2word = data.training_dataset.id2word
@@ -95,10 +95,10 @@ def main(cfg):
         precision=cfg.host_system_config.precision,
         callbacks=[checkpoint_callback, lr_monitor],
         resume_from_checkpoint=path_to_restart,
-        logger=wandb_logger,
+        #logger=wandb_logger,
     )
 
-    wandb_logger.watch(model, log_freq=10)
+    #wandb_logger.watch(model, log_freq=10)
     trainer.fit(model, data)
 
     wandb.finish()

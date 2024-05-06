@@ -245,6 +245,8 @@ class Model(pl.LightningModule):
         return loss_total
     #[x[1]["cost_to_pointer"] for x in batch[2]]
     def training_step(self, batch, _):
+        if batch is None:
+            return None
         if self.cnt_ep > 4 and self.cfg.host_system_config.resume_from_checkpoint:
             raise MemoryError("Memory error")
         if batch[0].shape[0] == None:
