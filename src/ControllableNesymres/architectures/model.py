@@ -196,24 +196,21 @@ class Model(pl.LightningModule):
 
 
     def compute_contrastive_loss(self, set_trf_output, skeleton_enc_output):
-        xy_dot = torch.sum(set_trf_output * skeleton_enc_output,axis=1)
+        x_norm = F.normalize(set_trf_output, dim=-1, eps=1e-5)
+        y_norm = F.normalize(skeleton_enc_output, dim=-1, eps=1e-5)
 
-        
-        xy = set_trf_output @ skeleton_enc_output.T
-        yx = skeleton_enc_output @ set_trf_output.T
+        xy = x_norm @ y_norm.T / self.cfg.contrastive_learning.temperature
+        yx = y_norm @ x_norm.T / self.cfg.contrastive_learning.temperature 
 
-        temp_xy_dot = xy_dot / self.cfg.contrastive_learning.temperature
-        temp_xy = xy / self.cfg.contrastive_learning.temperature
-        temp_yx = yx / self.cfg.contrastive_learning.temperature
-        
-        temp_xy_dot =  torch.exp(temp_xy_dot)
-        exp_xy = torch.exp(temp_xy)
-        exp_yx = torch.exp(temp_yx)          
+        targets = torch.zeros_like(xy).fill_diagonal_(1)
 
-        summed_xy_loss = torch.sum(torch.log(temp_xy_dot / torch.sum(exp_xy, axis=1)), axis=0)
-        summed_yx_loss = torch.sum(torch.log(temp_xy_dot / torch.sum(exp_yx, axis=1)), axis=0)
-        total_loss = summed_xy_loss + summed_yx_loss
-        contrastive_loss = - (total_loss / set_trf_output.shape[0])
+        logsoftmax_xy = F.log_softmax(xy, dim=-1)
+        logsoftmax_yx = F.log_softmax(yx, dim=-1)
+
+        loss_xy = -torch.mean(torch.sum(logsoftmax_xy * targets, dim=-1), axis=-1)
+        loss_yx = -torch.mean(torch.sum(logsoftmax_yx * targets, dim=-1), axis=-1)
+
+        contrastive_loss = (loss_xy + loss_yx) / 2
 
         assert contrastive_loss >= 0
 
@@ -497,7 +494,7 @@ class Model(pl.LightningModule):
             trg_ = self.dropout(te + pos)
 
             if self.cfg.contrastive_learning.enabled == True:
-                skeleton_output = self.skeleton_enc(trg_.permute(1, 0, 2))
+                skeleton_output = self.skeleton_enc(trg_.permute(1, 0, 2), generated_mask2.float())
                 output = self.decoder_transfomer(
                     skeleton_output, 
                     src_enc.permute(1, 0, 2), 

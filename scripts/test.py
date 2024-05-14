@@ -11,7 +11,6 @@ import numpy as np
 import json
 
 #TO DELETE
-import math
 import random
 
 from pathlib import Path
@@ -61,7 +60,7 @@ def main(model_type, min_support, max_support, test_path):
         hardware_cfg = omegaconf.OmegaConf.load('configs/host_system_config/host.yaml')
         cfg = omegaconf.OmegaConf.merge(cfg, hardware_cfg)
 
-        model = 'weights/10000000_log_-epoch=201-val_loss=0.00_new_version.ckpt'
+        model = 'weights/10000000_log_-epoch=203-val_loss=0.00_sencoder5.ckpt'
     else:
         cfg = omegaconf.OmegaConf.load(Path('configs/nsr_network_config.yaml'))
         model = 'model/ControllableNeuralSymbolicRegressionWeights/nsr_200000000_epoch=149.ckpt'
@@ -139,6 +138,15 @@ def main(model_type, min_support, max_support, test_path):
             'Error Message': f'NameError: {e}'
         })
         else:
+            if type(results) != torch.Tensor:
+                evaluation_dict.update({
+                'Match Equation': 0,
+                'R2 Score': float('nan'),
+                'Error Message': 'Predicted equation could not be interpreted.'
+                })
+                evaluations_list.append(evaluation_dict)
+                continue
+
             if isinstance(results, (int, float)) and results == 0:
                 results = torch.zeros(variables.shape[0])
 
