@@ -9,19 +9,17 @@ import sympy as sp
 
 import numpy as np
 import json
-
-#TO DELETE
 import random
 
 from pathlib import Path
 from functools import partial
+from datetime import datetime
+
 import argparse
 
 
         
-def main(model_type, min_support, max_support, test_path):
-    seed = 22
-
+def main(model_type, min_support, max_support, test_path, seed):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -53,17 +51,40 @@ def main(model_type, min_support, max_support, test_path):
     'sub': np.subtract,
     'tan': np.tan,
     'tanh': np.tanh
-    }
+    }   
 
-    if model_type == "mmsr":
+    mmsr_models = [{
+        "model_name": "mmsr_se1_oldloss",
+        "skeleton_encoder_layers": 1,
+        "model_path": "weights/Epoch_201_SEncoder_1_old_loss.ckpt",
+        "loss_version": "old"
+    },
+    {
+        "model_name": "mmsr_se5_oldloss",
+        "skeleton_encoder_layers": 5,
+        "model_path": "weights/Epoch_203_SEncoder_5_old_loss.ckpt",
+        "loss_version": "old"
+    },
+    {
+        "model_name": "nsr",
+        "model_path": "model/ControllableNeuralSymbolicRegressionWeights/nsr_200000000_epoch=149.ckpt",
+    },
+    ]
+
+    model_config = next((config for config in mmsr_models if config["model_name"] == model_type), None)
+
+    assert model_config is not None, f"Model type {model_type} could not be found"
+
+    model = model_config["model_path"]
+
+    if model_config["model_name"] == "nsr":
+        cfg = omegaconf.OmegaConf.load(Path('configs/nsr_network_config.yaml'))    
+    else:
         cfg =  omegaconf.OmegaConf.load(Path("configs/mmsr_config.yaml"))
         hardware_cfg = omegaconf.OmegaConf.load('configs/host_system_config/host.yaml')
         cfg = omegaconf.OmegaConf.merge(cfg, hardware_cfg)
-
-        model = 'weights/10000000_log_-epoch=203-val_loss=0.00_sencoder5.ckpt'
-    else:
-        cfg = omegaconf.OmegaConf.load(Path('configs/nsr_network_config.yaml'))
-        model = 'model/ControllableNeuralSymbolicRegressionWeights/nsr_200000000_epoch=149.ckpt'
+        cfg.architecture.skel_enc_layers = model_config["skeleton_encoder_layers"]
+    
 
     cfg.inference.bfgs.activated = False
     cfg.inference.bfgs.n_restarts=10
@@ -166,8 +187,10 @@ def main(model_type, min_support, max_support, test_path):
     evaluation_of_prediction = pd.DataFrame(evaluations_list)
     
     path = 'evaluation/'
-    file_name = f'evaluation_of_prediction_{model_type}_{Path(test_path).name}_SupportRange{cfg.dataset.fun_support.min}to{cfg.dataset.fun_support.max}'
 
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+
+    file_name = f'evaluation_of_prediction_{timestamp}'
     filename_csv = f'{file_name}.csv'
 
     config = {
@@ -175,7 +198,9 @@ def main(model_type, min_support, max_support, test_path):
         'maximum_support': cfg.dataset.fun_support.max,
         'model': model_type,
         'dataset': Path(test_path).name,
-        'csv_filename': filename_csv
+        'csv_filename': filename_csv,
+        **({'skeleton_encoder_layers': model_config['skeleton_encoder_layers']} if 'skeleton_encoder_layers' in model_config else {}),
+        **({'loss_version': model_config['loss_version']} if 'loss_version' in model_config else {})
     }
 
     filename_config = f'{path}{file_name}.json'
@@ -202,7 +227,8 @@ if __name__ == '__main__':
     parser.add_argument('--max_support', type=int, default=10, help='The maximum support value')
     parser.add_argument('--model_type', type=str, default='mmsr', help='The model type')
     parser.add_argument('--test_path', type=str, default='data/benchmark/train_nc', help='The path of the test data')
+    parser.add_argument('--seed', type=int, default=22, help='The seed value for reproducibility')
 
     args = parser.parse_args()
 
-    main(args.model_type, args.min_support, args.max_support, args.test_path)
+    main(args.model_type, args.min_support, args.max_support, args.test_path, args.seed)

@@ -21,6 +21,9 @@ for filename in os.listdir(path):
 
             evaluation_data.append({
                 'Model': data['model'],
+                'Dataset': data['dataset'],
+                'Skeleton Encoder Layers': data['skeleton_encoder_layers'] if 'skeleton_encoder_layers' in data else 'N/A',
+                'Loss Version': data['loss_version'] if 'loss_version' in data else 'N/A',
                 'Minimum Support': data['minimum_support'],
                 'Maximum Support': data['maximum_support'],
                 'Total Entries': total_entries,
@@ -28,6 +31,6 @@ for filename in os.listdir(path):
                 'Match Percentage': match_percentage
             })
             
-evaluation_df = pd.DataFrame(evaluation_data)
+evaluation_df = pd.DataFrame(evaluation_data).sort_values(by=['Model', 'Minimum Support'])
 
 evaluation_df.to_csv(os.path.join(path,summary_filename), index=False)           
