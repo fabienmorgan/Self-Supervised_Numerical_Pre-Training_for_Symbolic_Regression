@@ -66,6 +66,12 @@ def main(model_type, min_support, max_support, test_path, seed):
         "loss_version": "old"
     },
     {
+        "model_name": "mmsr_se5_newloss",
+        "skeleton_encoder_layers": 5,
+        "model_path": "weights/Epoch_176_SEncoder_5_new_loss.ckpt",
+        "loss_version": "new"
+    },
+    {
         "model_name": "nsr",
         "model_path": "model/ControllableNeuralSymbolicRegressionWeights/nsr_200000000_epoch=149.ckpt",
     },
