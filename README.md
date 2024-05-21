@@ -1,28 +1,29 @@
-# Controllable Neural Symbolic Regression
-This repository contains the code and resources for the paper "Controllable Neural Symbolic Regression" by Tommaso Bendinelli, Luca Biggio, and Pierre-Alexandre Kamienny.
+# Self-Supervised Numerical Pre-Training for Symbolic Regression 
+This repository contains the code and resources for the bachelor thesis "Self-Supervised Numerical Pre-Training for Symbolic Regression " by Fabien Morgan.
 
 ### Overview
-Neural Symbolic Regression with Hypotheses (NSRwH) is a novel neural symbolic regression method that allows the incorporation of user-defined prior knowledge or hypotheses about the expected structure of the ground-truth expression. The method improves both the accuracy and controllability of the predicted expression structure.
+TODO
+NSRwH
 
 
 ## Getting Started
 
 ### Prerequisites
-* Tested on Python 3.9.5 
-* Tested on Ubuntu 20.04
-* Tested on PyTorch 1.12 
-* Tested on Pytorch Lightning 1.9.5 (Does not work out of the box with Python Lightning >= 2.0.0)
+* Tested on Python 3.11 
+* Tested on Ubuntu TODO
+* Tested on PyTorch TODO 
+* Tested on Pytorch Lightning TODO
 ### Installation
 Clone the repository:
 ``` 
-git clone https://github.com/SymposiumOrganization/ControllableNeuralSymbolicRegression.git
+git clone TODO
 ```
 Create and source the virtual environment:
 ```
 python3 -m venv env
 source env/bin/activate
 ```
-Install PyTorch from https://pytorch.org/get-started, version 1.12.0 is greatly recommended.
+Install PyTorch from https://pytorch.org/get-started, version TODO is greatly recommended.
 Install the ControllableNesymres package and its dependencies:
 ```
 cd src/
@@ -35,26 +36,30 @@ cd model/
 
 Please check the requirements file if you encounter trouble with some other dependencies.
 
-## Interactive Demo
-### Hosted on HuggingFace
-Try it out here: https://huggingface.co/spaces/TommasoBendinelli/ControllableNeuralSymbolicRegression
-
-### Hosted locally
+## Test on own equations
 1. Download the weights from HuggingFace:
 ```
-git clone   https://huggingface.co/TommasoBendinelli/ControllableNeuralSymbolicRegressionWeights 
+git clone TODO 
 ```
-2. Run the interactive demo using the demo module:
+
+2. If you want to reproduce the experiments on your own equations, you will need to convert from the csv format into the dataloader format. To do so, run the following script:
 ```
-streamlit run visualization/demo.py
+scripts/data_creation/convert_csv_to_dataload_format.py 
+```
+This script will create a new folder called "benchmark" inside the data folder. Inside this folder, it will create a folder for each benchmark set. 
+TODO
+
+3. Run the test:
+```
+python3 scripts/test.py
 ```
 
 
 ## Reproducing the Experiments
 ### Data Generation (Training)
-Generate synthetic datasets using the data_generation module. For our experiments we used 200 million equations with the following parameters:
+Generate synthetic datasets using the data_generation module. For the experiments 10 million equations where used with the following parameters:
 ``` 
-python3 scripts/data_creation/create_dataset.py  --root_folder_path target_folder  --number_of_equations 200000000 --cores 32 --resume
+python3 scripts/data_creation/create_dataset.py  --root_folder_path target_folder  --number_of_equations 10000000 --cores 32 --resume
 Arguments:
     --root_folder_path: path to the folder where the dataset will be saved
     --number_of_equations: number of equations to generate
@@ -64,7 +69,7 @@ Additional Arguments:
     --eq_per_block: number of equations to generate in each block
 ``` 
 Note that:
-1. With 65 cores it took more than 10 days to generate the 200M dataset. We recommend to use a smaller number of equations for testing purposes (e.g., 10M). 
+1. With 32 cores it took around 2 days to generate the 10M dataset. 
 2. In some cases the data generation process could hang. In this case, you can kill the process and resume the generation from the last saved file using the --resume flag.
 3. Equations are generated randomly by a seed dependent on the current date and time, so you will get different equations every time you run the script. If you want to generate the same equations, you can set the seed manually in the script (line 754 of src/ControllableNesymres/dataset/generator.py)
 
@@ -87,30 +92,24 @@ Arguments:
 Additional Arguments:
     --debug/--no-debug: if --no-debug, the script is run with multiprocessing
 
-### Benchmark Set handling 
-If you want to reproduce the experiments on the benchmark set, you will need to convert from the csv format into the dataloader format. To do so, run the following script:
-```
-scripts/data_creation/convert_csv_to_dataload_format.py 
-```
-This script will create a new folder called "benchmark" inside the data folder. Inside this folder, it will create a folder for each benchmark set.
-
-
 ### Model Training
 Train the NSRwH model using the model module:
 ``` 
-python scripts/train.py train_path=target_folder/datasets/2000000 benchmark_path=data/validation
+python scripts/train.py train_path=target_folder/datasets/10000000 benchmark_path=data/validation
 ``` 
 Note we make use of [Hydra](https://hydra.cc) to manage the configuration. The associated configuration file is located in scripts/config.py. You can change the configuration by either editing the file or by passing the desired parameters as command line arguments. For example, to train the model with a different number of epochs you can run:
 ```
 python scripts/train.py  train_path=target_folder/datasets/2000000 benchmark_path=target_folder/datasets/2000 batch_size=100
 ```
-Take a look at the configuration file for more details about the available parameters. The conditioning setction is located under dataset.
+Take a look at the configuration file for more details about the available parameters. The conditioning setction is located under dataset. 
+TODO Hydra host config
 If you want to train the model without the conditioning, i.e. the standard NSR model, you can run:
 ```
 python scripts/train.py  train_path=target_folder/datasets/2000000 benchmark_path=target_folder/datasets/2000 batch_size=100 dataset.conditioning.mode=False architecture.conditioning=False
 ```
 
 Note that by default the model will test on the benchmark dataset every check_val_every_n_epoch epochs. Please note that if you have not created the benchmark dataset, you will neet to avoid validation by setting check_val_every_n_epoch to a very large number (e.g., 1000000) and saving the model according to the steps.
+TODO
 
 ## Host Configuration
 Because the training hardware is individual the host configuration is not checked in and needs to be manually added as a host.yaml file into the folder host_system_config. This folder needs to be created in the scripts folder. The host config needs these seven parameters:  
