@@ -19,7 +19,7 @@ import argparse
 
 
         
-def main(model_type, min_support, max_support, test_path, seed):
+def main(model_type, min_support, max_support, test_path, seed, number_of_samples=None):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -62,13 +62,13 @@ def main(model_type, min_support, max_support, test_path, seed):
     {
         "model_name": "mmsr_se5_oldloss",
         "skeleton_encoder_layers": 5,
-        "model_path": "weights/Epoch_203_SEncoder_5_old_loss.ckpt",
+        "model_path": "weights/Epoch_201_SEncoder_5_old_loss.ckpt",
         "loss_version": "old"
     },
     {
         "model_name": "mmsr_se5_newloss",
         "skeleton_encoder_layers": 5,
-        "model_path": "weights/Epoch_176_SEncoder_5_new_loss.ckpt",
+        "model_path": "weights/Epoch_201_SEncoder_5_new_loss.ckpt",
         "loss_version": "new"
     },
     {
@@ -98,6 +98,10 @@ def main(model_type, min_support, max_support, test_path, seed):
     cfg.dataset.fun_support.max = max_support
     cfg.dataset.fun_support.min = min_support
     cfg.inference.beam_size = 5
+
+    if number_of_samples is not None:
+        cfg.dataset.type_of_sampling_points = 'constant'
+        cfg.dataset.max_number_of_points = number_of_samples
 
     metadata = load_metadata_hdf5(Path(test_path))
     metadata = retrofit_word2id(metadata, cfg)
@@ -231,10 +235,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--min_support', type=int, default=-10, help='The minimum support value')
     parser.add_argument('--max_support', type=int, default=10, help='The maximum support value')
-    parser.add_argument('--model_type', type=str, default='mmsr', help='The model type')
+    parser.add_argument('--model_type', type=str, default='mmsr_se5_newloss', help='The model type')
     parser.add_argument('--test_path', type=str, default='data/benchmark/train_nc', help='The path of the test data')
     parser.add_argument('--seed', type=int, default=22, help='The seed value for reproducibility')
+    parser.add_argument('--number_of_samples', type=int, default=None, help='The number of sample points')
 
     args = parser.parse_args()
 
-    main(args.model_type, args.min_support, args.max_support, args.test_path, args.seed)
+    main(args.model_type, args.min_support, args.max_support, args.test_path, args.seed, args.number_of_samples)

@@ -2,17 +2,16 @@
 This repository contains the code and resources for the bachelor thesis "Self-Supervised Numerical Pre-Training for Symbolic Regression " by Fabien Morgan.
 
 ### Overview
-TODO
-NSRwH
+This Bachelor thesis investigates recent advancements in the field of Neural Symbolic Regression (NSR) and applies these methods. The novel approach utilized for NSR in this thesis is Contrastive Learning, inspired by the paper "MMSR: Symbolic Regression is a Multimodal Task" (arXiv:2402.18603). The performance of the models was extensively analyzed, particularly considering domain shifts. The code is built upon the [codebase](https://github.com/SymposiumOrganization/ControllableNeuralSymbolicRegression/tree/main) of the paper "Controllable Neural Symbolic Regression" (arXiv:2304.10336).
 
 
 ## Getting Started
 
 ### Prerequisites
 * Tested on Python 3.11 
-* Tested on Ubuntu TODO
-* Tested on PyTorch TODO 
-* Tested on Pytorch Lightning TODO
+* Tested on Ubuntu 20.04
+* Tested on PyTorch 2.2.1 
+* Tested on Pytorch Lightning 1.9.5
 ### Installation
 Clone the repository:
 ``` 
@@ -23,7 +22,7 @@ Create and source the virtual environment:
 python3 -m venv env
 source env/bin/activate
 ```
-Install PyTorch from https://pytorch.org/get-started, version TODO is greatly recommended.
+Install PyTorch from https://pytorch.org/get-started, version 2.2.1 is greatly recommended.
 Install the ControllableNesymres package and its dependencies:
 ```
 cd src/
@@ -39,15 +38,14 @@ Please check the requirements file if you encounter trouble with some other depe
 ## Test on own equations
 1. Download the weights from HuggingFace:
 ```
-git clone TODO 
+git clone https://huggingface.co/fabien-morgann/Self-Supervised-Numerical-Pre-Training-for-Symbolic-Regression 
 ```
 
-2. If you want to reproduce the experiments on your own equations, you will need to convert from the csv format into the dataloader format. To do so, run the following script:
+2. If you want to reproduce the experiment on your own equations, you will need to convert from the csv format into the dataloader format. To do so, run the following script:
 ```
 scripts/data_creation/convert_csv_to_dataload_format.py 
 ```
-This script will create a new folder called "benchmark" inside the data folder. Inside this folder, it will create a folder for each benchmark set. 
-TODO
+This script will create a new folder called "benchmark" inside the data folder. Inside this folder, it will create a folder for each benchmark set. For the thesis only the dataset `train_nc` was used.
 
 3. Run the test:
 ```
@@ -93,26 +91,21 @@ Additional Arguments:
     --debug/--no-debug: if --no-debug, the script is run with multiprocessing
 
 ### Model Training
-Train the NSRwH model using the model module:
+Train the model using the model module:
 ``` 
-python scripts/train.py train_path=target_folder/datasets/10000000 benchmark_path=data/validation
+python scripts/train.py host_system_config.train_path=target_folder/datasets/10000000 
 ``` 
 Note we make use of [Hydra](https://hydra.cc) to manage the configuration. The associated configuration file is located in scripts/config.py. You can change the configuration by either editing the file or by passing the desired parameters as command line arguments. For example, to train the model with a different number of epochs you can run:
 ```
-python scripts/train.py  train_path=target_folder/datasets/2000000 benchmark_path=target_folder/datasets/2000 batch_size=100
+python scripts/train.py  host_system_config.train_path=target_folder/datasets/10000000 host_system_config.batch_size=100
 ```
-Take a look at the configuration file for more details about the available parameters. The conditioning setction is located under dataset. 
-TODO Hydra host config
-If you want to train the model without the conditioning, i.e. the standard NSR model, you can run:
-```
-python scripts/train.py  train_path=target_folder/datasets/2000000 benchmark_path=target_folder/datasets/2000 batch_size=100 dataset.conditioning.mode=False architecture.conditioning=False
-```
+Take a look at the configuration file for more details about the available parameters.
 
 Note that by default the model will test on the benchmark dataset every check_val_every_n_epoch epochs. Please note that if you have not created the benchmark dataset, you will neet to avoid validation by setting check_val_every_n_epoch to a very large number (e.g., 1000000) and saving the model according to the steps.
 TODO
 
 ## Host Configuration
-Because the training hardware is individual the host configuration is not checked in and needs to be manually added as a host.yaml file into the folder host_system_config. This folder needs to be created in the scripts folder. The host config needs these seven parameters:  
+Because the training hardware is individual the host configuration is seperate to the config. This means that a folder needs to be created in the path of the config named `host_system_config` and in this folder a file named `host.yaml` needs to be created. This file only contains host specific files and this is done so that it is possible to work on the repository on multiple different computer with different hardware specification and files safed in different paths. The file is  not checked in and needs to be manually created. The host config needs these seven parameters:  
 `train_path`  
 `benchmark_path`  
 `model_path`  
