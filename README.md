@@ -101,9 +101,6 @@ python scripts/train.py  host_system_config.train_path=target_folder/datasets/10
 ```
 Take a look at the configuration file for more details about the available parameters.
 
-Note that by default the model will test on the benchmark dataset every check_val_every_n_epoch epochs. Please note that if you have not created the benchmark dataset, you will neet to avoid validation by setting check_val_every_n_epoch to a very large number (e.g., 10'000'000) and saving the model according to the steps.
-TODO
-
 ## Host Configuration
 Because the training hardware is individual the host configuration is seperate to the config. This means that a folder needs to be created in the path of the config named `host_system_config` and in this folder a file named `host.yaml` needs to be created. This file only contains host specific files and this is done so that it is possible to work on the repository on multiple different computer with different hardware specification and files safed in different paths. The file is  not checked in and needs to be manually created. The host config needs these seven parameters:  
 `train_path`  
@@ -139,4 +136,4 @@ path_to_candidate: configs/equations_ops_3_5000.json # This is the file that con
 
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License
