@@ -19,7 +19,7 @@ import argparse
 
 
         
-def main(model_type, min_support, max_support, test_path, seed, number_of_samples=None):
+def main(model_type, min_support, max_support, test_path, seed, number_of_samples=None, custom_model_path=None, skeleton_encoder_layers=None):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -81,7 +81,15 @@ def main(model_type, min_support, max_support, test_path, seed, number_of_sample
     },
     ]
 
-    model_config = next((config for config in mmsr_models if config["model_name"] == model_type), None)
+    if custom_model_path and skeleton_encoder_layers:
+        model_config = {
+            "model_name": model_type,
+            "model_path": custom_model_path,
+            "skeleton_encoder_layers": skeleton_encoder_layers,
+            "loss_version": "unknown"
+        }
+    else:
+        model_config = next((config for config in mmsr_models if config["model_name"] == model_type), None)
 
     assert model_config is not None, f"Model type {model_type} could not be found"
 
@@ -243,7 +251,10 @@ if __name__ == '__main__':
     parser.add_argument('--test_path', type=str, default='data/benchmark/train_nc', help='The path of the test data')
     parser.add_argument('--seed', type=int, default=22, help='The seed value for reproducibility')
     parser.add_argument('--number_of_samples', type=int, default=None, help='The number of sample points')
+    parser.add_argument('--custom_model_path', type=str, default=None, help='Path to a custom model')
+    parser.add_argument('--skeleton_encoder_layers', type=int, default=None, help='Number of skeleton encoder layers for the custom model')
+
 
     args = parser.parse_args()
 
-    main(args.model_type, args.min_support, args.max_support, args.test_path, args.seed, args.number_of_samples)
+    main(args.model_type, args.min_support, args.max_support, args.test_path, args.seed, args.number_of_samples, args.custom_model_path, args.skeleton_encoder_layers)

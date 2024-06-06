@@ -30,30 +30,43 @@ pip install -e .
 ```
 Download the weights of the trained model and place them in the model folder:
 ```
-cd model/
+cd weights/
 ```
 
 Please check the requirements file if you encounter trouble with some other dependencies.
 
 ## Test on own equations
-1. Download the weights from HuggingFace:
+1. Download the weights from HuggingFace (model "Epoch_215_SEncoder_5_new_loss.ckpt" is the final implementation of the project and the best model):
 ```
 git clone https://huggingface.co/fabien-morgann/Self-Supervised-Numerical-Pre-Training-for-Symbolic-Regression 
-```
+```  
 
 2. If you want to reproduce the experiment on your own equations, you will need to convert from the csv format into the dataloader format. To do so, run the following script:
 ```
 scripts/data_creation/convert_csv_to_dataload_format.py 
 ```
-This script will create a new folder called "benchmark" inside the data folder. Inside this folder, it will create a folder for each benchmark set. For the thesis only the dataset `train_nc` was used.
+This script will create a new folder called "benchmark" inside the data folder. Inside this folder, it will create a folder for each benchmark set. For the thesis only the dataset `train_nc` was used. The models where not tested on the other dataset and for datasets with constants it is likely that further modifications need to be done.
 
 3. Run the test:
 ```
 python3 scripts/test.py
+Arguments:
+    --min_support: The minimum support range of the sampled data points
+    --max_support: The maximum support range of the sampled data points
+    --model_type: The name of the model (There is a dictionary with the names in test.py if you have safed the model in the default path)
+    --test_path: The path of the train_nc dataset
+    --seed: The random seed for reproducability
+    --number_of_samples: Number of sampled data points for each to predict equation
+    --custom_model_path: If you don't safe the model in the default path you can set where the checkpoint file is safed
+    --skeleton_encoder_layers: If you use a custom model path then the number of skeleton encoder layers need to be defined
 ```
+4. The evaluation of the test with the predicted equation, the true equation and further information can be found in the `evalutaion/` folder.
 
+5. If multiple tests are done they can be agregated with the script `scripts/evaluate_test.py`. The script will create a CSV file with the aggrated evaluation under `evaluation/evaluation_summary.csv`. If the same run has been done twice on accident the duplicate run can be deleted with the script `scripts/delelte_duplicate_eval_files.py`.
 
-## Reproducing the Experiments
+6. The folder `evaluation_graphs/` has all the visualisations done for the thesis and additionally has a notebook that checks if the aggregated file of `evaluation/evaluation_summary.csv` has all the required content for the visualisations. It is important to note that to do all the evaluations that the thesis did it takes multiple days on a RTX 3080.
+
+## Reproducing the training
 ### Data Generation (Training)
 Generate synthetic datasets using the data_generation module. For the experiments 10 million equations where used with the following parameters:
 ``` 
