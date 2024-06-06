@@ -15,7 +15,7 @@ This Bachelor thesis investigates recent advancements in the field of Neural Sym
 ### Installation
 Clone the repository:
 ``` 
-git clone TODO
+git clone https://github.com/fabienmorgan/Self-Supervised_Numerical_Pre-Training_for_Symbolic_Regression.git
 ```
 Create and source the virtual environment:
 ```
