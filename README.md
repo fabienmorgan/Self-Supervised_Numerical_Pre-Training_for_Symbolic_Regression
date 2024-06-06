@@ -35,7 +35,9 @@ cd weights/
 
 Please check the requirements file if you encounter trouble with some other dependencies.
 
-## Test on own equations
+Set up the Host configuration (See end of README)
+
+## Test on equations
 1. Download the weights from HuggingFace (model "Epoch_215_SEncoder_5_new_loss.ckpt" is the final implementation of the project and the best model):
 ```
 git clone https://huggingface.co/fabien-morgann/Self-Supervised-Numerical-Pre-Training-for-Symbolic-Regression 
