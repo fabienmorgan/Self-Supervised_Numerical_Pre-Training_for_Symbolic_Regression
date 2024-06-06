@@ -75,6 +75,10 @@ def main(model_type, min_support, max_support, test_path, seed, number_of_sample
         "model_name": "nsr",
         "model_path": "model/ControllableNeuralSymbolicRegressionWeights/nsr_200000000_epoch=149.ckpt",
     },
+    {
+        "model_name": "self_trained_nsr",
+        "model_path": "weights/Epoch_201_NSR.ckpt",
+    },
     ]
 
     model_config = next((config for config in mmsr_models if config["model_name"] == model_type), None)
@@ -83,7 +87,7 @@ def main(model_type, min_support, max_support, test_path, seed, number_of_sample
 
     model = model_config["model_path"]
 
-    if model_config["model_name"] == "nsr":
+    if model_config["model_name"] in  ["nsr", "self_trained_nsr"]:
         cfg = omegaconf.OmegaConf.load(Path('configs/nsr_network_config.yaml'))    
     else:
         cfg =  omegaconf.OmegaConf.load(Path("configs/mmsr_config.yaml"))
@@ -233,8 +237,8 @@ def r2_score(y_true, y_pred):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process the arguments model type, support range, data path')
 
-    parser.add_argument('--min_support', type=int, default=-10, help='The minimum support value')
-    parser.add_argument('--max_support', type=int, default=10, help='The maximum support value')
+    parser.add_argument('--min_support', type=float, default=-10, help='The minimum support value')
+    parser.add_argument('--max_support', type=float, default=10, help='The maximum support value')
     parser.add_argument('--model_type', type=str, default='mmsr_se5_newloss', help='The model type')
     parser.add_argument('--test_path', type=str, default='data/benchmark/train_nc', help='The path of the test data')
     parser.add_argument('--seed', type=int, default=22, help='The seed value for reproducibility')

@@ -30,7 +30,7 @@ def main(cfg):
 
     cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-    #wandb_logger = WandbLogger(project="MMSR", entity="fabien-morgan", config=cfg_dict, log_model=True, resume='allow', id='RUN_ID', save_model=False)
+    #wandb_logger = WandbLogger(project="MMSR", entity="fabien-morgan", config=cfg_dict, log_model=True, resume='allow', id='RUN_ID', log_model=False)
 
     cfg.inference.word2id = data.training_dataset.word2id
     cfg.inference.id2word = data.training_dataset.id2word
@@ -101,7 +101,7 @@ def main(cfg):
     #wandb_logger.watch(model, log_freq=10)
     trainer.fit(model, data)
 
-    wandb.finish()
+    #wandb.finish()
 
 
 if __name__ == "__main__":

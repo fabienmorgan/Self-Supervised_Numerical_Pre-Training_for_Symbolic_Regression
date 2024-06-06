@@ -54,7 +54,7 @@ architecture:
   lr: 0.0001
   dropout: 0
   cond_num_layers: 3
-  skel_enc_layers: 1
+  skel_enc_layers: 5
   num_features: 32
   ln: True
   N_p: 0
