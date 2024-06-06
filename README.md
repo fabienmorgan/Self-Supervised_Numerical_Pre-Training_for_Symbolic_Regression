@@ -1,5 +1,5 @@
 # Self-Supervised Numerical Pre-Training for Symbolic Regression 
-This repository contains the code and resources for the bachelor thesis "Self-Supervised Numerical Pre-Training for Symbolic Regression " by Fabien Morgan.
+This repository contains the code and resources for the bachelor thesis "Self-Supervised Numerical Pre-Training for Symbolic Regression" by Fabien Morgan.
 
 ### Overview
 This Bachelor thesis investigates recent advancements in the field of Neural Symbolic Regression (NSR) and applies these methods. The novel approach utilized for NSR in this thesis is Contrastive Learning, inspired by the paper "MMSR: Symbolic Regression is a Multimodal Task" (arXiv:2402.18603). The performance of the models was extensively analyzed, particularly considering domain shifts. The code is built upon the [codebase](https://github.com/SymposiumOrganization/ControllableNeuralSymbolicRegression/tree/main) of the paper "Controllable Neural Symbolic Regression" (arXiv:2304.10336).
@@ -101,7 +101,7 @@ python scripts/train.py  host_system_config.train_path=target_folder/datasets/10
 ```
 Take a look at the configuration file for more details about the available parameters.
 
-Note that by default the model will test on the benchmark dataset every check_val_every_n_epoch epochs. Please note that if you have not created the benchmark dataset, you will neet to avoid validation by setting check_val_every_n_epoch to a very large number (e.g., 1000000) and saving the model according to the steps.
+Note that by default the model will test on the benchmark dataset every check_val_every_n_epoch epochs. Please note that if you have not created the benchmark dataset, you will neet to avoid validation by setting check_val_every_n_epoch to a very large number (e.g., 10'000'000) and saving the model according to the steps.
 TODO
 
 ## Host Configuration
